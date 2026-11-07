@@ -3,7 +3,7 @@
 //   - Name and email are taken from ID at every sign-in (`overrideUserInfo`): ID is where people change them.
 //   - Words about passwords and Track.
 // Signing out here leaves someone signed in at ID, as Track does. Signing out everywhere through ID's end-session
-// waits on two problems in Gateweave ID v0.10.4 (issue #3): it asks "Confirm logout" even with a good
+// waits on two problems in Gateweave ID, seen on v0.10.4 and still in v0.10.6 (issue #3): it asks "Confirm logout" even with a good
 // `id_token_hint`, and its own `form-action 'self'` then stops the browser coming back.
 import type { Account, GenericEndpointContext, Session } from "better-auth";
 import { createAuthEndpoint, NO_STORE_HEADERS } from "better-auth/api";

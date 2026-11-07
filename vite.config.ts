@@ -9,7 +9,10 @@ export default defineConfig({
 	plugins: [
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tailwindcss(),
-		tanstackStart(),
+		// tsr.config.json carries Start's route-tree footer so `tsr generate` (typegen, typecheck) writes the same
+		// src/routeTree.gen.ts as the build. Start writes that footer itself and reads tsr.config.json too, so this
+		// empty one, which wins over the file, keeps it from being written twice.
+		tanstackStart({ router: { routeTreeFileFooter: [] } }),
 		viteReact(),
 	],
 });

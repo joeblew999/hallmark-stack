@@ -11,11 +11,15 @@
 //   3. A and B pick the same hour; A books it, and B's booking of it is refused. B sees it taken. A cancels it, and B
 //      sees it free.
 //   4. A presses courts' "Sign out": signed out of courts, still signed in at ID, as Track does. (Signing out of both
-//      in one go waits on two problems in Gateweave ID v0.10.4, issue #3.)
+//      in one go waits on two problems in Gateweave ID, seen on v0.10.4 and still in v0.10.6, issue #3.)
 //   5. B signs out at ID, as on ID's account page: ID's back-channel logout ends B's session in courts.
-//   6. Both people are deleted from ID and from courts, whatever happened.
-import { execFileSync, spawnSync } from "node:child_process";
+//   6. Hallmark's lint on A's signed-in pages, the home page and Your bookings with a booking on it, as deployed.
+//   7. Both people are deleted from ID and from courts, whatever happened.
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { dirname, extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
 import { APP_DOMAIN } from "./app-config.mjs";
 import { APP_WRANGLER } from "./cloudflare.mjs";
@@ -85,6 +89,45 @@ async function pick(page, hour) {
 	const button = page.locator(".booker .btn");
 	await see(button, `at ${hour}`, `the booker at ${hour}`);
 	return (await button.textContent())?.replace("Book ", "").replace(` at ${hour}`, "") ?? "";
+}
+
+/** Where the signed-in pages are saved for Hallmark's lint. Inside the git-ignored build folder. */
+const SAVED = "dist/hallmark-signed-in";
+const LINT_PORT = 4714;
+let server;
+
+/**
+ * Saves `page` as it is now, signed in, as `name`.html for Hallmark's lint: its HTML without scripts (the lint needs
+ * the rendered page, not the app), and every stylesheet, font and image it names from the live site, fetched through
+ * this browser and stored at the same paths, so the lint, given them over HTTP (step 6), renders exactly what was
+ * deployed. Returns the page's path.
+ */
+async function savePage(context, page, name) {
+	const fetched = new Set();
+	async function keep(path) {
+		if (fetched.has(path)) return;
+		fetched.add(path);
+		const answer = await context.request.get(`${COURTS}${path}`);
+		if (!answer.ok())
+			throw new Error(`Couldn't fetch ${path} for Hallmark's lint (${answer.status()})`);
+		const file = join(SAVED, path);
+		mkdirSync(dirname(file), { recursive: true });
+		const body = await answer.body();
+		if (path.endsWith(".css")) {
+			for (const [, url] of body.toString("utf8").matchAll(/url\((\/[^)"']+)\)/g)) await keep(url);
+		}
+		writeFileSync(file, body);
+	}
+	const html = (await page.content())
+		.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "")
+		.replace(/<link\b[^>]*rel="modulepreload"[^>]*>/g, "");
+	for (const [, , path] of html.matchAll(
+		/(href|src)="(\/(?!\/)[^"]+\.(?:css|svg|jpg|jpeg|png|webp|avif|woff2?))"/g,
+	)) {
+		await keep(path);
+	}
+	writeFileSync(join(SAVED, `${name}.html`), html);
+	return `/${name}.html`;
 }
 
 /** Whether a browser is signed in at `origin`, by Better Auth's own session check there. */
@@ -167,6 +210,15 @@ try {
 	await see(row(), "taken", "the court shown taken to B");
 	console.log("   B sees it taken.");
 
+	// A's pages, signed in and with a booking on them, saved for Hallmark's lint (step 6).
+	rmSync(SAVED, { recursive: true, force: true });
+	mkdirSync(SAVED, { recursive: true });
+	await open(a.page, "/");
+	const home = await savePage(a.context, a.page, "home");
+	await open(a.page, "/bookings");
+	await a.page.locator(".mine__table tbody tr").first().waitFor({ timeout: WAIT });
+	const bookings = await savePage(a.context, a.page, "bookings");
+
 	await open(a.page, "/bookings");
 	await a.page.getByRole("button", { name: "Cancel" }).first().click();
 	await a.page.locator(".mine__empty").waitFor({ timeout: WAIT });
@@ -205,6 +257,63 @@ try {
 		await new Promise((done) => setTimeout(done, 1_000));
 	}
 	console.log("   B is signed out of ID, and courts heard it and ended B's session.");
+
+	console.log("\n6. Hallmark's lint on the signed-in pages, as deployed (saved in step 3).");
+	// Over HTTP, as scripts/hallmark.mjs does: given a file, the lint would also read the built CSS beside it as
+	// source. The home page is a page; Your bookings is an app screen.
+	const types = {
+		html: "text/html",
+		css: "text/css",
+		svg: "image/svg+xml",
+		jpg: "image/jpeg",
+		woff2: "font/woff2",
+	};
+	server = createServer((request, response) => {
+		const path = join(
+			SAVED,
+			normalize(decodeURIComponent(new URL(request.url, "http://x").pathname)),
+		);
+		if (!path.startsWith(`${SAVED}/`) || !existsSync(path)) return response.writeHead(404).end();
+		response.writeHead(200, {
+			"content-type": types[extname(path).slice(1)] ?? "application/octet-stream",
+		});
+		response.end(readFileSync(path));
+	});
+	await new Promise((listening) => server.listen(LINT_PORT, "127.0.0.1", listening));
+	for (const [scope, file] of [
+		["page", home],
+		["app", bookings],
+	]) {
+		// Not spawnSync: that would stop this process, and the server above with it.
+		const lint = await new Promise((done) => {
+			const child = spawn("node", [
+				".claude/skills/hallmark/scripts/sloplint.mjs",
+				"src/styles.css",
+				"src/styles",
+				"--url",
+				`http://127.0.0.1:${LINT_PORT}${file}`,
+				"--render",
+				"--genre",
+				"editorial",
+				"--scope",
+				scope,
+			]);
+			const out = { stdout: "", stderr: "" };
+			child.stdout.on("data", (d) => {
+				out.stdout += d;
+			});
+			child.stderr.on("data", (d) => {
+				out.stderr += d;
+			});
+			child.on("close", (status) => done({ ...out, status }));
+		});
+		process.stdout.write(lint.stdout.replace(/^/gm, "   "));
+		if (lint.status !== 0 || !/clean\. 0 FAIL, 0 REFLEX, 0 WARN/.test(lint.stdout)) {
+			throw new Error(
+				`Hallmark's lint isn't clean on the signed-in ${file}: ${lint.stderr.trim()}`,
+			);
+		}
+	}
 } catch (error) {
 	failed = true;
 	console.error(`\nall:e2e failed: ${error instanceof Error ? error.message : error}`);
@@ -226,7 +335,8 @@ try {
 	}
 } finally {
 	await browser?.close();
-	console.log("\n6. The two people, deleted from ID and from courts.");
+	server?.close();
+	console.log("\n7. The two people, deleted from ID and from courts.");
 	try {
 		inId(`DELETE FROM user WHERE email IN (${addresses})`);
 		inId(`DELETE FROM deployment_invitation WHERE email IN (${addresses})`);
@@ -239,5 +349,5 @@ try {
 }
 if (failed) process.exit(1);
 console.log(
-	"\nall:e2e passed: sign in through ID, a double booking refused, cancel, sign out of courts, sign out at ID ends courts.\n",
+	"\nall:e2e passed: sign in through ID, a double booking refused, cancel, sign out of courts, sign out at ID ends courts, signed-in pages pass Hallmark.\n",
 );

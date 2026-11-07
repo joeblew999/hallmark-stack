@@ -36,7 +36,7 @@ description = "End this repo's Cloudflare login (wrangler logout: the token is r
 run = "node scripts/cloudflare-logout.mjs"
 
 [tasks."id:deploy"]
-description = "Gateweave ID (pinned v0.10.4) onto Cloudflare at https://id.ubuntusoftware.net, by ID's own deploy script, set up for the internet: email from its own name id.ubuntusoftware.net (Email Sending), its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
+description = "Gateweave ID (pinned v0.10.6) onto Cloudflare at https://id.ubuntusoftware.net, by ID's own deploy script, set up for the internet: email from its own name id.ubuntusoftware.net (Email Sending), its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
 run = "node scripts/id-deploy.mjs"
 
 [tasks."id:claim"]
@@ -58,7 +58,7 @@ depends = ["app:register"]
 run = "mise run all:e2e"
 
 [tasks."all:e2e"]
-description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, courts' Sign out signs one out of courts, signing out at ID ends the other's courts session; then they are deleted (scripts/all-e2e.mjs)"
+description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, courts' Sign out signs one out of courts, signing out at ID ends the other's courts session; Hallmark's lint on the signed-in pages; then they are deleted (scripts/all-e2e.mjs)"
 run = "node scripts/all-e2e.mjs"
 
 [tasks."app:undeploy"]
