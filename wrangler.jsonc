@@ -6,6 +6,8 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": { "enabled": true },
 	"upload_source_maps": true,
+	// The address, a Workers Custom Domain (issue #2): Gateweave ID reaches it there, never on workers.dev.
+	"routes": [{ "pattern": "courts.ubuntusoftware.net", "custom_domain": true }],
 	// Once a day, bookings older than a month are deleted.
 	"triggers": { "crons": ["17 3 * * *"] },
 	// Accounts and sessions (Better Auth). Provisioned on first deploy.

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { userOf } from "#/server/auth";
+import { oidcProviderName, userOf } from "#/server/auth";
 import { days, venue } from "#/server/venue";
 import type { Booking, BookResult } from "#/server/venue-do";
 
@@ -51,3 +51,8 @@ export const cancelBooking = createServerFn({ method: "POST" })
 		if (!user) return false;
 		return venue().cancel(user.id, data);
 	});
+
+/** The sign-in page's options: the OpenID Connect provider's name, or null when none is set up. */
+export const signInOptions = createServerFn({ method: "GET" }).handler(async () => ({
+	provider: oidcProviderName(),
+}));

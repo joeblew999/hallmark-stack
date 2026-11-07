@@ -4,6 +4,18 @@ Generated from `package.json` by `aube run commands`; don't edit by hand. Tools 
 (`mise install`), packages installed with `aube install`. With mise activated in your shell, `aube` is on the
 path; otherwise prefix `mise exec --`.
 
+## mise: the control plane
+
+What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.toml`.
+
+| Command | What it's for |
+| --- | --- |
+| `mise run cloudflare:login` | Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who |
+| `mise run cloudflare:logout` | End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so |
+| `mise run id:deploy` | Deploy Gateweave ID (pinned v0.10.4) to id.ubuntusoftware.net with ID's own deploy script, then register this app with it: its client id and secret go into this Worker's secrets, never printed (scripts/id.mjs) |
+
+## The app
+
 | Command | What it's for | Runs |
 | --- | --- | --- |
 | `aube run dev` | Run the app on http://localhost:4710 (the Worker in workerd, D1 and the Durable Object local) | `vite dev --port 4710 --strictPort` |

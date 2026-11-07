@@ -911,8 +911,20 @@ html:not(.js) .panel[hidden] {
 .mine__head .lead {
 	color: var(--color-ink-2);
 }
-.auth__form {
+.auth__body {
 	grid-column: 7 / 13;
+	display: grid;
+	gap: var(--space-2xl);
+}
+.auth__provider {
+	display: grid;
+	gap: var(--space-lg);
+	justify-items: start;
+}
+.auth__or {
+	color: var(--color-ink-2);
+}
+.auth__form {
 	display: grid;
 	gap: var(--space-xl);
 }
@@ -991,7 +1003,7 @@ html:not(.js) .panel[hidden] {
 		grid-template-columns: minmax(0, 1fr);
 	}
 	.auth__head,
-	.auth__form,
+	.auth__body,
 	.mine__head,
 	.mine__table,
 	.mine__empty {

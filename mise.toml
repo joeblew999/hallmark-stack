@@ -24,3 +24,7 @@ run = "node scripts/cloudflare-login.mjs"
 [tasks."cloudflare:logout"]
 description = "End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so"
 run = "node scripts/cloudflare-logout.mjs"
+
+[tasks."id:deploy"]
+description = "Deploy Gateweave ID (pinned v0.10.4) to id.ubuntusoftware.net with ID's own deploy script, then register this app with it: its client id and secret go into this Worker's secrets, never printed (scripts/id.mjs)"
+run = "node scripts/id.mjs"

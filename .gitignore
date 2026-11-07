@@ -20,3 +20,6 @@ worker-configuration.d.ts
 .claude/worktrees/
 
 .DS_Store
+
+# Gateweave ID, fetched at its pinned release by mise run id:deploy
+vendor/

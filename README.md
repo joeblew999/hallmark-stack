@@ -66,6 +66,28 @@ this stack, on this design, instead of writing standalone HTML:
    as a project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time
    lint on every CSS change, and `aube run hallmark` runs its full lint on the rendered production build, in CI too.
 
+## Gateweave ID: the sign-in
+
+[gateweavehq/id](https://github.com/gateweavehq/id) is Gateweave's OpenID Connect provider: one account for all our
+apps, on its own Worker, on the same stack. It runs on Cloudflare only. This app signs in through it as Track does,
+with a "Continue with Gateweave ID" button beside the password (`src/server/auth/oidc.ts`, Better Auth's
+generic-oauth plugin), and ends someone's sessions here when they sign out there (back-channel logout). The button
+appears only when `OIDC_ISSUER`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` are set.
+
+Cloudflare, from mise (the root `mise.toml`):
+
+- `mise run cloudflare:login`: Wrangler's device-code login, one click on the link it prints; already logged in, it
+  says as whom. `mise run cloudflare:logout` ends it.
+- `mise run id:deploy`: ID at its pinned release (`v0.10.4`, commit `bd1d4e6`, checked 2026-11-07), fetched into the
+  git-ignored `vendor/gateweave-id/` and installed with aube, deployed to `id.ubuntusoftware.net` by ID's own deploy
+  script (it creates ID's D1, applies its migrations and sets its own secret, as the "Deploy to Cloudflare" button
+  would); then this app registered with it, its client id and secret put straight into this Worker's secrets, never
+  printed. Sign up at ID straight away: the first account owns the server. It needs this app's Worker deployed first;
+  without it, it stops before registering and says so.
+
+Both run on Custom Domains on `ubuntusoftware.net` (this app on `courts.ubuntusoftware.net`, `wrangler.jsonc`):
+two Workers on `workers.dev` can't reach each other at all. Issue #2 has the plan and its decisions.
+
 ## How it works
 
 - **Accounts** are Better Auth's, in D1 (`src/server/auth/`, `migrations/`).

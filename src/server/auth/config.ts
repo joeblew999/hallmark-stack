@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type { Database } from "../db";
 import { schema } from "../db";
+import { type OidcProvider, oidcSignIn } from "./oidc";
 
 export interface AuthConfig {
 	db: Database;
@@ -10,6 +11,8 @@ export interface AuthConfig {
 	baseURL?: string | undefined;
 	/** Marks cookies Secure. A Worker has no NODE_ENV, so Better Auth cannot tell production by itself. */
 	secureCookies?: boolean | undefined;
+	/** An OpenID Connect provider (Gateweave ID) to offer beside the password. */
+	oidc?: OidcProvider | undefined;
 }
 
 /**
@@ -26,6 +29,6 @@ export function createAuth(config: AuthConfig) {
 			useSecureCookies: config.secureCookies,
 			database: { generateId: () => crypto.randomUUID() },
 		},
-		plugins: [tanstackStartCookies()],
+		plugins: [...(config.oidc ? oidcSignIn(config.db, config.oidc) : []), tanstackStartCookies()],
 	});
 }

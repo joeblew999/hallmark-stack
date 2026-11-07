@@ -31,6 +31,9 @@ importers:
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(kysely@0.29.8)
+      jose:
+        specifier: 6.2.14
+        version: 6.2.14
       lucide-react:
         specifier: 1.65.0
         version: 1.65.0(@types/react@19.3.0)(react@19.3.1)
@@ -3783,6 +3786,12 @@ packages:
       }
     hasBin: true
 
+  jose@6.2.14:
+    resolution:
+      {
+        integrity: sha512-3JasLuki1NRLQvY4wCoC37KZk4qxoBx2k2aFqLxT84IezqW0bkJKnNtxnZj/Fu1xsQivoc/lytxaRHJoGLjJ1A==,
+      }
+
   jose@6.2.15:
     resolution:
       {
@@ -7017,6 +7026,8 @@ snapshots:
   isbot@5.2.2: {}
 
   jiti@2.7.0: {}
+
+  jose@6.2.14: {}
 
   jose@6.2.15: {}
 
