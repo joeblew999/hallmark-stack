@@ -10,6 +10,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import type { Database } from "../db";
 import { schema } from "../db";
 import { type OidcProvider, oidcDatabaseHooks, oidcSignIn } from "./oidc-sign-in";
+import { DISABLED_ROUTES } from "./routes";
 
 export interface AuthConfig {
 	db: Database;
@@ -38,6 +39,8 @@ export function createAuth(config: AuthConfig) {
 		baseURL: config.baseURL,
 		database: drizzleAdapter(config.db, { provider: "sqlite", schema }),
 		telemetry: { enabled: false },
+		// Every Better Auth route courts doesn't use is off (routes.ts).
+		disabledPaths: [...DISABLED_ROUTES],
 		// Better Auth only turns its limiter on by itself when NODE_ENV is "production", which a
 		// Worker never sets. Its built-in rules allow 3 sign-ins per 10 seconds per client. It
 		// stays on in local dev too, so what works there works deployed.
