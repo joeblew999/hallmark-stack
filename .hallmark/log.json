@@ -1,0 +1,31 @@
+[
+ {
+  "shape": "Map / Diagram",
+  "theme": "grid",
+  "axes": "light/grotesk-sans/cool",
+  "hero": "Stage",
+  "nav": "search-led bar",
+  "footer": "colophon block",
+  "imagery": "photographs, library 2, duotone; product built in hero (booker) and plan (site map)",
+  "photos": [
+   "Richèl_Hogenkamp_-_Masters_de_Madrid_2015_-_11.jpg",
+   "Goal_on_the_move_(5772132849).jpg"
+  ],
+  "entry": "booker on the ultramarine field",
+  "fingerprint": "stage/field-booker/bleed-photo/map/switcher-red/schedule/split-photo",
+  "sections": [
+   "Hero (booker)",
+   "Photo bleed",
+   "Map (site plan)",
+   "Switcher (sports, red field)",
+   "Schedule (coaching)",
+   "Split (hours, address, free slots, photo)",
+   "Footer"
+  ],
+  "signature": "the court booker, the chosen hour at poster scale on the ultramarine",
+  "waived": [],
+  "prompt": "sports booking site",
+  "date": "2026-11-07",
+  "mode": "build"
+ }
+]

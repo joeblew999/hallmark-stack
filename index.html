@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eastfield Courts: book tennis, padel and five-a-side by the hour</title>
+<meta name="description" content="See which tennis, padel and five-a-side courts are free at Eastfield, choose an hour and book.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Radio+Canada+Big:wght@400;700&family=Radio+Canada:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="page.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="wordmark" href="#main" aria-label="Eastfield Courts, home"><span>Eastfield</span><span>Courts</span></a>
+    <form class="search" role="search" data-search>
+      <label class="visually-hidden" for="q">Find a court or a time</label>
+      <input id="q" name="q" type="search" placeholder="Find a court or a time" autocomplete="off" enterkeyhint="search">
+      <kbd aria-hidden="true">/</kbd>
+      <p class="search__msg" aria-live="polite"></p>
+    </form>
+    <a class="link nav__book" href="#book">Book</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container hero__grid">
+      <div class="hero__text">
+        <h1 id="hero-title">Pick an hour.<br>The court<br>is yours.</h1>
+        <p class="lead">Tennis, padel and five-a-side: see what’s free, then play.</p>
+        <div class="hero__actions"><a class="link" href="#plan">See the site plan</a></div>
+      </div>
+
+      <div class="booker" id="book" data-slot="booker" data-kind="product" data-alt="A screenshot of the live booking screen once it is connected">
+        <form data-endpoint="" novalidate aria-label="Book a court">
+          <div class="booker__when" aria-live="polite">
+            <p class="booker__hour"><output name="hour-out" for="t19">19:00</output></p>
+            <p class="booker__day"><output name="day-out">Today</output>, <output name="court-out">court 3</output></p>
+          </div>
+
+          <fieldset class="chips">
+            <legend>Day</legend>
+            <input type="radio" name="day" id="d0" value="Today" checked><label for="d0">Today</label>
+            <input type="radio" name="day" id="d1" value="Tomorrow"><label for="d1">Tomorrow</label>
+            <input type="radio" name="day" id="d2" value="Saturday"><label for="d2">Saturday</label>
+            <input type="radio" name="day" id="d3" value="Sunday"><label for="d3">Sunday</label>
+          </fieldset>
+
+          <fieldset class="chips">
+            <legend>Start time</legend>
+            <input type="radio" name="time" id="t17" value="17:00"><label for="t17">17:00</label>
+            <input type="radio" name="time" id="t18" value="18:00"><label for="t18">18:00</label>
+            <input type="radio" name="time" id="t19" value="19:00" checked><label for="t19">19:00</label>
+            <input type="radio" name="time" id="t20" value="20:00"><label for="t20">20:00</label>
+            <input type="radio" name="time" id="t21" value="21:00"><label for="t21">21:00</label>
+          </fieldset>
+
+          <fieldset class="courts">
+            <legend>Court</legend>
+            <ul>
+              <li><input type="radio" name="court" id="c1" value="court 1" disabled><label for="c1"><b>Court 1</b><small>tennis, taken</small></label></li>
+              <li><input type="radio" name="court" id="c2" value="court 2"><label for="c2"><b>Court 2</b><small>tennis</small></label></li>
+              <li><input type="radio" name="court" id="c3" value="court 3" checked><label for="c3"><b>Court 3</b><small>tennis</small></label></li>
+              <li><input type="radio" name="court" id="c4" value="court 4" disabled><label for="c4"><b>Court 4</b><small>tennis, taken</small></label></li>
+              <li><input type="radio" name="court" id="c5" value="padel A"><label for="c5"><b>Padel A</b><small>padel</small></label></li>
+              <li><input type="radio" name="court" id="c6" value="padel B"><label for="c6"><b>Padel B</b><small>padel</small></label></li>
+              <li><input type="radio" name="court" id="c7" value="the pitch"><label for="c7"><b>The pitch</b><small>five-a-side</small></label></li>
+              <li><input type="radio" name="court" id="c8" value="court 5" disabled><label for="c8"><b>Court 5</b><small>tennis, taken</small></label></li>
+            </ul>
+          </fieldset>
+
+          <div class="booker__go">
+            <button class="btn" type="submit">Book court 3 at 19:00</button>
+            <p class="booker__msg" id="book-msg" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div class="bleed-wrap"><div class="container bleed-grid">
+    <figure class="bleed" data-slot="court-photo" data-alt="Your own courts in play, square crop, daylight">
+      <img src="images/clay-court.jpg" width="1920" height="1280" loading="lazy" sizes="(min-width: 60rem) 70vw, 100vw" alt="A player stretching for a backhand on a clay court" style="object-position: 55% 20%">
+    </figure>
+  </div></div>
+
+  <section class="plan" id="plan" aria-labelledby="plan-title">
+    <div class="container">
+      <div class="plan__head">
+        <h2 id="plan-title">Clay courts, padel cages, one pitch.</h2>
+        <p class="lead">Click a court to book it for the hour you picked.</p>
+      </div>
+      <div class="plan__map" tabindex="0" role="region" aria-label="Site plan, scrolls sideways on small screens">
+        <svg class="plan__svg" viewBox="0 0 1312 560" role="group" aria-label="Site plan of Eastfield Courts">
+          <g class="plan__zone" aria-hidden="true">
+            <rect x="0" y="0" width="1312" height="560"/>
+          </g>
+          <a href="#book" data-court="court 1" aria-label="Court 1, tennis"><rect class="c" x="0" y="40" width="150" height="320"/><path class="m" d="M24 70h102v260H24zM24 200h102M75 110v180M24 110h102M24 290h102"/><text x="16" y="400">Court 1</text></a>
+          <a href="#book" data-court="court 2" aria-label="Court 2, tennis"><rect class="c" x="174" y="40" width="150" height="320"/><path class="m" d="M198 70h102v260H198zM198 200h102M249 110v180M198 110h102M198 290h102"/><text x="190" y="400">Court 2</text></a>
+          <a href="#book" data-court="court 3" aria-label="Court 3, tennis"><rect class="c" x="348" y="40" width="150" height="320"/><path class="m" d="M372 70h102v260H372zM372 200h102M423 110v180M372 110h102M372 290h102"/><text x="364" y="400">Court 3</text></a>
+          <a href="#book" data-court="court 4" aria-label="Court 4, tennis"><rect class="c" x="522" y="40" width="150" height="320"/><path class="m" d="M546 70h102v260H546zM546 200h102M597 110v180M546 110h102M546 290h102"/><text x="538" y="400">Court 4</text></a>
+          <a href="#book" data-court="court 5" aria-label="Court 5, tennis"><rect class="c" x="696" y="40" width="150" height="320"/><path class="m" d="M720 70h102v260H720zM720 200h102M771 110v180M720 110h102M720 290h102"/><text x="712" y="400">Court 5</text></a>
+          <a href="#book" data-court="padel A" aria-label="Padel A"><rect class="c" x="894" y="40" width="190" height="96"/><path class="m" d="M989 52v72M914 88h150"/><text x="910" y="166">Padel A</text></a>
+          <a href="#book" data-court="padel B" aria-label="Padel B"><rect class="c" x="1104" y="40" width="190" height="96"/><path class="m" d="M1199 52v72M1124 88h150"/><text x="1120" y="166">Padel B</text></a>
+          <a href="#book" data-court="the pitch" aria-label="The pitch, five-a-side"><rect class="c" x="894" y="196" width="400" height="164"/><path class="m" d="M1094 212v132M914 248h40v60h-40M1274 248h-40v60h40"/><circle class="m" cx="1094" cy="278" r="30"/><text x="910" y="400">The pitch</text></a>
+          <g class="plan__fixed" aria-hidden="true">
+            <rect x="0" y="450" width="500" height="110"/><text x="24" y="514">Clubhouse and desk</text>
+            <rect x="1104" y="450" width="208" height="110"/><text x="1128" y="514">Way in</text>
+          </g>
+        </svg>
+      </div>
+      <ul class="plan__legend" aria-label="Key">
+        <li><i class="k k--free" aria-hidden="true"></i>Free at your hour</li>
+        <li><i class="k k--taken" aria-hidden="true"></i>Taken</li>
+        <li><i class="k k--pick" aria-hidden="true"></i>Your pick</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="games field--mark" aria-labelledby="games-title">
+    <div class="container">
+      <h2 id="games-title">Three games, one booking.</h2>
+      <div class="switch" data-switch>
+        <div class="tabs" role="tablist" aria-label="Sport">
+          <button type="button" role="tab" id="tab-tennis" aria-selected="true" aria-controls="p-tennis">Tennis</button>
+          <button type="button" role="tab" id="tab-padel" aria-selected="false" aria-controls="p-padel" tabindex="-1">Padel</button>
+          <button type="button" role="tab" id="tab-five" aria-selected="false" aria-controls="p-five" tabindex="-1">Five-a-side</button>
+        </div>
+        <section class="panel" role="tabpanel" id="p-tennis" aria-labelledby="tab-tennis">
+          <p class="panel__name" aria-hidden="true">Tennis</p>
+          <dl class="panel__facts">
+            <div><dt>Courts</dt><dd>1 to 5, clay</dd></div>
+            <div><dt>Book for</dt><dd>One hour or ninety minutes</dd></div>
+            <div><dt>Players</dt><dd>Singles or doubles</dd></div>
+            <div><dt>Bring</dt><dd>Your racket, or hire one at the desk</dd></div>
+          </dl>
+        </section>
+        <section class="panel" role="tabpanel" id="p-padel" aria-labelledby="tab-padel" hidden>
+          <p class="panel__name" aria-hidden="true">Padel</p>
+          <dl class="panel__facts">
+            <div><dt>Courts</dt><dd>Padel A and B, glass walls</dd></div>
+            <div><dt>Book for</dt><dd>Ninety minutes</dd></div>
+            <div><dt>Players</dt><dd>Four, always doubles</dd></div>
+            <div><dt>Bring</dt><dd>Clean soles; balls at the desk</dd></div>
+          </dl>
+        </section>
+        <section class="panel" role="tabpanel" id="p-five" aria-labelledby="tab-five" hidden>
+          <p class="panel__name" aria-hidden="true">Five-a-side</p>
+          <dl class="panel__facts">
+            <div><dt>Pitch</dt><dd>One floodlit pitch, artificial grass</dd></div>
+            <div><dt>Book for</dt><dd>One hour</dd></div>
+            <div><dt>Players</dt><dd>Two teams of five</dd></div>
+            <div><dt>Bring</dt><dd>Moulded studs or trainers</dd></div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="coaching" id="coaching" aria-labelledby="coaching-title">
+    <div class="container coaching__grid">
+      <div class="coaching__head">
+        <h2 id="coaching-title">Coaching from five till seven.</h2>
+        <p class="lead">Groups by level; ask at the desk for one-to-one.</p>
+      </div>
+      <table class="week">
+        <caption class="visually-hidden">Weekly coaching sessions</caption>
+        <thead><tr><th scope="col">Day</th><th scope="col">17:00</th><th scope="col">18:00</th><th scope="col">19:00</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Monday</th><td>Junior tennis</td><td>Padel, first steps</td><td>Cardio tennis</td></tr>
+          <tr><th scope="row">Tuesday</th><td>Junior tennis</td><td>Women’s padel</td><td>Five-a-side league</td></tr>
+          <tr><th scope="row">Wednesday</th><td>Mini tennis</td><td>Tennis, improvers</td><td>Padel, match play</td></tr>
+          <tr><th scope="row">Thursday</th><td>Junior tennis</td><td>Padel, first steps</td><td>Five-a-side league</td></tr>
+          <tr><th scope="row">Saturday</th><td>Mini tennis</td><td>Family padel</td><td>Club night</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="visit" id="visit" aria-labelledby="visit-title">
+    <div class="container visit__grid">
+      <div class="visit__text">
+        <h2 id="visit-title">Where to find the clay.</h2>
+        <dl class="visit__facts">
+          <div><dt>Open</dt><dd><span class="fill" data-fill="hours">Opening hours to be added</span></dd></div>
+          <div><dt>Address</dt><dd><span class="fill" data-fill="address">Street address to be added</span></dd></div>
+        </dl>
+        <div class="visit__next">
+          <h3>Free today</h3>
+          <ul class="next" data-next>
+            <li><a class="next__slot" href="#book" data-time="17:00" data-c="court 2">17:00, court 2</a></li>
+            <li><a class="next__slot" href="#book" data-time="18:00" data-c="padel A">18:00, padel A</a></li>
+            <li><a class="next__slot" href="#book" data-time="20:00" data-c="the pitch">20:00, the pitch</a></li>
+          </ul>
+        </div>
+      </div>
+      <figure class="visit__photo" data-slot="pitch-photo" data-alt="The way in or the pitch at dusk, portrait">
+        <img src="images/goal.jpg" width="1920" height="1920" loading="lazy" alt="A netted goal on the five-a-side pitch" style="object-position: 50% 45%">
+      </figure>
+    </div>
+  </section>
+</main>
+
+<div class="bar" data-bar>
+  <div class="container bar__inner">
+    <p class="bar__pick"><output data-bar-pick>Today at 19:00, court 3</output></p>
+    <a class="btn" href="#book">Book this court</a>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="container foot__inner">
+    <p class="foot__mark">Eastfield Courts</p>
+    <p class="foot__col">Tennis, padel and five-a-side, booked by the hour. <a class="link" href="#book">Book</a>, <a class="link" href="#plan">the site plan</a>, <a class="link" href="#coaching">coaching</a> or <a class="link" href="#visit">how to find us</a>.</p>
+    <p class="foot__credits" data-credits>Photographs: <a class="link" href="https://commons.wikimedia.org/wiki/File:Rich%C3%A8l_Hogenkamp_-_Masters_de_Madrid_2015_-_11.jpg">Carlos Delgado</a> (CC BY-SA 4.0), <a class="link" href="https://commons.wikimedia.org/wiki/File:Goal_on_the_move_(5772132849).jpg">Håkan Dahlström</a> (CC BY 2.0), Wikimedia Commons.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const form = document.querySelector('.booker form');
+  const out = (n) => form.elements[n];
+  const courts = [...form.querySelectorAll('input[name="court"]')];
+  const sport = (i) => i.nextElementSibling.querySelector('small');
+  const kind = courts.map((c) => sport(c).textContent.replace(', taken', ''));
+  // Sample availability until the booking API is connected: a fixed pattern by day, hour and court.
+  const taken = (d, t, i) => ((d * 7 + t * 3 + i * 5) % 9) < 3;
+  const pick = (n) => form.querySelector(`input[name="${n}"]:checked`);
+  function sync() {
+    const d = [...form.querySelectorAll('input[name="day"]')].indexOf(pick('day'));
+    const t = parseInt(pick('time').value, 10);
+    courts.forEach((c, i) => {
+      const busy = taken(d, t, i);
+      c.disabled = busy;
+      sport(c).textContent = kind[i] + (busy ? ', taken' : '');
+      if (busy && c.checked) c.checked = false;
+    });
+    if (!pick('court')) { const free = courts.find((c) => !c.disabled); if (free) free.checked = true; }
+    const c = pick('court');
+    out('hour-out').value = pick('time').value;
+    out('day-out').value = pick('day').value;
+    out('court-out').value = c ? c.value : 'no court free';
+    const btn = form.querySelector('button[type="submit"]');
+    btn.textContent = c ? `Book ${c.value} at ${pick('time').value}` : 'Every court is taken';
+    btn.disabled = !c;
+    form.querySelector('.booker__msg').textContent = '';
+    document.dispatchEvent(new CustomEvent('booker:change', { detail: { day: pick('day').value, time: pick('time').value, court: c ? c.value : null, taken: courts.filter((x) => x.disabled).map((x) => x.value) } }));
+  }
+  form.addEventListener('change', sync);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = form.querySelector('.booker__msg');
+    if (!form.dataset.endpoint) { msg.textContent = 'Nothing was booked: online booking is not connected yet.'; return; }
+  });
+  sync();
+  window.eastfieldFreeToday = () => { const times = [...form.querySelectorAll('input[name="time"]')].map((x) => x.value); return times.map((tv) => { const i = courts.findIndex((c, k) => !taken(0, parseInt(tv, 10), k)); return i < 0 ? null : { time: tv, court: courts[i].value }; }).filter(Boolean).slice(0, 3); };
+  window.eastfieldSet = (time, val) => { const t = form.querySelector(`input[name="time"][value="${time}"]`); const d0 = form.querySelector('#d0'); if (d0) d0.checked = true; if (t) t.checked = true; sync(); return window.eastfieldPick(val); };
+  window.eastfieldPick = (val) => { const c = courts.find((x) => x.value === val); if (c && !c.disabled) { c.checked = true; sync(); } return c; };
+
+  const search = document.querySelector('[data-search]');
+  const q = search.querySelector('input');
+  document.addEventListener('keydown', (e) => { if (e.key === '/' && document.activeElement !== q && !/input|textarea/i.test(document.activeElement.tagName)) { e.preventDefault(); q.focus(); } });
+  search.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = q.value.trim().toLowerCase();
+    const say = search.querySelector('.search__msg');
+    const time = form.querySelector(`input[name="time"][value^="${v.replace(/[^0-9]/g, '').slice(0, 2)}"]`);
+    if (time && /\d/.test(v)) { time.checked = true; sync(); }
+    const c = courts.find((x) => !x.disabled && (x.value.includes(v) || kind[courts.indexOf(x)].includes(v)));
+    if (c) { c.checked = true; sync(); }
+    if (time || c) { say.textContent = ''; document.getElementById('book').scrollIntoView(); form.querySelector('button[type="submit"]').focus({ preventScroll: true }); }
+    else say.textContent = 'No court or time matches that. Try “padel” or “18:00”.';
+  });
+})();
+</script>
+<script>
+(() => {
+  const links = [...document.querySelectorAll('.plan__svg a[data-court]')];
+  const pickOut = document.querySelector('[data-bar-pick]');
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  document.addEventListener('booker:change', (e) => {
+    const { day, time, court, taken } = e.detail;
+    links.forEach((a) => {
+      const v = a.dataset.court, isTaken = taken.includes(v);
+      a.classList.toggle('is-taken', isTaken);
+      a.classList.toggle('is-pick', v === court);
+      a.setAttribute('aria-label', `${cap(v)}, ${isTaken ? 'taken' : 'free'} at ${time}`);
+    });
+    pickOut.value = court ? `${day} at ${time}, ${court}` : `${day} at ${time}, every court taken`;
+  });
+  links.forEach((a) => a.addEventListener('click', (e) => { if (a.classList.contains('is-taken')) { e.preventDefault(); return; } window.eastfieldPick(a.dataset.court); }));
+  document.querySelectorAll('.next__slot').forEach((a, i) => { const f = window.eastfieldFreeToday()[i]; if (!f) { a.parentElement.remove(); return; } a.dataset.time = f.time; a.dataset.c = f.court; a.textContent = `${f.time}, ${f.court}`; });
+  document.querySelectorAll('.next__slot').forEach((a) => a.addEventListener('click', () => window.eastfieldSet(a.dataset.time, a.dataset.c)));
+  document.querySelector('.booker form').dispatchEvent(new Event('change'));
+
+  // Switcher: arrow keys move between tabs.
+  document.querySelectorAll('[data-switch]').forEach((sw) => {
+    const tabs = [...sw.querySelectorAll('[role="tab"]')];
+    const show = (t) => { tabs.forEach((x) => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; document.getElementById(x.getAttribute('aria-controls')).hidden = !on; }); };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => show(t));
+      t.addEventListener('keydown', (e) => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = tabs[(i + d + tabs.length) % tabs.length]; show(n); n.focus(); });
+    });
+  });
+
+  // The booking bar hides while the booker is on screen.
+  const bar = document.querySelector('[data-bar]');
+  new IntersectionObserver(([e]) => bar.classList.toggle('is-hidden', e.isIntersecting), { threshold: 0 }).observe(document.querySelector('.hero'));
+})();
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>
