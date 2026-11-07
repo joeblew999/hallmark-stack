@@ -1,8 +1,8 @@
 // Gateweave ID (github.com/gateweavehq/id): its pinned release, its address, the fetch of that release into the
-// git-ignored vendor/gateweave-id, and its own Wrangler. ID only; used by id-deploy.mjs and app-register.mjs.
+// git-ignored vendor/gateweave-id, and its own Wrangler. ID only; used by the id-* and app-* scripts that reach ID.
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 /** ID's release, from github.com/gateweavehq/id/releases; checked 2026-11-07 (commit bd1d4e6). */
 export const ID_RELEASE = "v0.10.4";
@@ -40,6 +40,9 @@ export function fetchId() {
 	}
 	execFileSync("aube", ["install", "--frozen-lockfile"], { cwd: ID_ROOT, stdio: "inherit" });
 }
+
+/** ID's own pinned Wrangler (its script), for scripts/cloudflare.mjs's remove(). */
+export const ID_WRANGLER = resolve(ID_WEB, "node_modules/wrangler/bin/wrangler.js");
 
 /** ID's own pinned Wrangler, run from ID's root, where its wrangler.jsonc is. */
 export const idWrangler = (args, options = {}) =>

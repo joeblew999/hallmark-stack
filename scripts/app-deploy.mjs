@@ -11,21 +11,13 @@
 // Secrets follow the README's Secrets section.
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { APP_DATABASE, APP_DOMAIN, APP_WORKER } from "./app-config.mjs";
 
 const run = (cmd, args) => execFileSync(cmd, args, { stdio: "inherit" });
 const wrangler = (args) => run("wrangler", args);
-const config = readFileSync("wrangler.jsonc", "utf8");
-const workerName = /"name":\s*"([^"]+)"/.exec(config)?.[1];
-const databaseName = /"database_name":\s*"([^"]+)"/.exec(config)?.[1];
-const appDomain = /"pattern":\s*"([^"]+)"/.exec(config)?.[1];
-if (!workerName || !databaseName || !appDomain) {
-	throw new Error(
-		"wrangler.jsonc needs the Worker's name, its D1 database_name and its route pattern",
-	);
-}
 
 run("node", ["scripts/cloudflare-login.mjs"]);
 run("vite", ["build"]);
@@ -33,7 +25,7 @@ run("vite", ["build"]);
 const databases = JSON.parse(
 	execFileSync("wrangler", ["d1", "list", "--json"], { encoding: "utf8" }),
 );
-const databaseExists = databases.some(({ name }) => name === databaseName);
+const databaseExists = databases.some(({ name }) => name === APP_DATABASE);
 const workerExists =
 	spawnSync("wrangler", ["secret", "list", "--format", "json"], { stdio: "ignore" }).status === 0;
 const migrate = () => wrangler(["d1", "migrations", "apply", "DB", "--remote"]);
@@ -58,4 +50,4 @@ if (workerExists) {
 	}
 }
 if (!databaseExists) migrate();
-console.log(`\n${workerName} is on https://${appDomain}.\n`);
+console.log(`\n${APP_WORKER} is on https://${APP_DOMAIN}.\n`);

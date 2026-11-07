@@ -3,6 +3,10 @@
 # The control plane: every tool this repo needs, pinned (`mise install` gets them; nothing is installed globally),
 # and the tasks for what sits outside the app: Cloudflare, Gateweave ID, deploying. The app's own commands are
 # package.json scripts. All of them are in docs/commands.md.
+#
+# Where things are deployed (Workers Custom Domains on ubuntusoftware.net, Cloudflare account gedw99@gmail.com):
+#   https://courts.ubuntusoftware.net   this app        (app:deploy; its address is the route in wrangler.jsonc)
+#   https://id.ubuntusoftware.net       Gateweave ID    (id:deploy; its address is ID_DOMAIN in scripts/id-release.mjs)
 
 [settings]
 # Any npm: tool mise installs goes through aube too.
@@ -41,3 +45,15 @@ run = "node scripts/app-register.mjs"
 [tasks."all:deploy"]
 description = "Everything onto Cloudflare, in order: id:deploy, app:deploy, app:register"
 run = ["mise run id:deploy", "mise run app:deploy", "mise run app:register"]
+
+[tasks."app:undeploy"]
+description = "This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"
+run = "node scripts/app-undeploy.mjs"
+
+[tasks."id:undeploy"]
+description = "Gateweave ID off Cloudflare, every piece: its Worker (domain, secrets, OIDC_PAIRWISE_SECRET included), its D1 and its logouts queue; every account gone, and every app's ids change when it comes back (scripts/id-undeploy.mjs)"
+run = "node scripts/id-undeploy.mjs"
+
+[tasks."all:undeploy"]
+description = "Everything off Cloudflare, in order: app:undeploy, id:undeploy"
+run = ["mise run app:undeploy", "mise run id:undeploy"]

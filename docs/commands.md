@@ -16,6 +16,9 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `mise run app:deploy` | This app onto Cloudflare at courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed (scripts/app-deploy.mjs) |
 | `mise run app:register` | This app registers itself with Gateweave ID; its client id and secret go straight into its Worker secrets, never printed; already registered, it does nothing (scripts/app-register.mjs) |
 | `mise run all:deploy` | Everything onto Cloudflare, in order: id:deploy, app:deploy, app:register |
+| `mise run app:undeploy` | This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs) |
+| `mise run id:undeploy` | Gateweave ID off Cloudflare, every piece: its Worker (domain, secrets, OIDC_PAIRWISE_SECRET included), its D1 and its logouts queue; every account gone, and every app's ids change when it comes back (scripts/id-undeploy.mjs) |
+| `mise run all:undeploy` | Everything off Cloudflare, in order: app:undeploy, id:undeploy |
 
 ## The app
 

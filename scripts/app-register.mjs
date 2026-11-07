@@ -5,15 +5,10 @@
 //
 // Secrets follow the README's Secrets section.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { APP_DOMAIN, APP_ID, APP_NAME } from "./app-config.mjs";
 import { fetchId, ID_DOMAIN, ID_WEB, idWrangler } from "./id-release.mjs";
-
-/** This app's id at ID, and its name on ID's pages. */
-const APP_ID = "courts";
-const APP_NAME = "Eastfield Courts";
-/** Where this app answers: its route in its own wrangler.jsonc. */
-const APP_DOMAIN = /"pattern":\s*"([^"]+)"/.exec(readFileSync("wrangler.jsonc", "utf8"))?.[1];
-if (!APP_DOMAIN) throw new Error("wrangler.jsonc has no route pattern");
 
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
@@ -38,24 +33,32 @@ idWrangler(
 	],
 	{ stdio: ["ignore", "ignore", "inherit"] },
 );
-const out = execFileSync(
-	"node",
-	[
-		"scripts/add-app.ts",
-		"--app",
-		APP_ID,
-		"--name",
-		APP_NAME,
-		"--redirect-uri",
-		`https://${APP_DOMAIN}/api/auth/callback/oidc`,
-		"--backchannel-logout-uri",
-		`https://${APP_DOMAIN}/api/auth/backchannel-logout/oidc`,
-	],
-	{ cwd: ID_WEB, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+// The row ID's own `apps:add` writes, built with ID's own helpers (src/server/auth/app-row.ts), but run as one SQL
+// command: `wrangler d1 execute --file`, which apps:add uses, uploads the file to R2 first, and some networks block
+// that (a Claude cloud session does). --command goes straight to D1's API.
+const { appRow, insertStatement, appAddedStatement } = await import(
+	pathToFileURL(resolve(ID_WEB, "src/server/auth/app-row.ts")).href
 );
-const clientId = /client id:\s+(\S+)/.exec(out)?.[1];
-const clientSecret = /client secret:\s+(\S+)/.exec(out)?.[1];
-if (!clientId || !clientSecret) throw new Error("ID's apps:add printed no client id and secret");
+const { row, clientId, clientSecret } = appRow({
+	app: APP_ID,
+	name: APP_NAME,
+	redirectUris: [`https://${APP_DOMAIN}/api/auth/callback/oidc`],
+	backchannelLogoutUri: `https://${APP_DOMAIN}/api/auth/backchannel-logout/oidc`,
+	requirePkce: true,
+});
+idWrangler(
+	[
+		"d1",
+		"execute",
+		"DB",
+		"--remote",
+		"--command",
+		`${insertStatement(row)} ${appAddedStatement(APP_ID)}`,
+	],
+	{
+		stdio: ["ignore", "ignore", "inherit"],
+	},
+);
 execFileSync("wrangler", ["secret", "bulk"], {
 	input: JSON.stringify({
 		OIDC_ISSUER: `https://${ID_DOMAIN}`,

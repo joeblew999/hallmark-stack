@@ -82,7 +82,14 @@ two Workers on `workers.dev` can't reach each other at all. Issue #2 has the pla
 
 ## Deploying
 
-Everything that goes onto Cloudflare is a mise task (the root `mise.toml`, the control plane), named noun first:
+Where things are deployed (Workers Custom Domains on `ubuntusoftware.net`, Cloudflare account `gedw99@gmail.com`;
+also at the top of `mise.toml`):
+
+- **This app:** https://courts.ubuntusoftware.net (the route in `wrangler.jsonc`)
+- **Gateweave ID:** https://id.ubuntusoftware.net (`ID_DOMAIN` in `scripts/id-release.mjs`)
+
+Everything that goes onto Cloudflare, or comes off it, is a mise task (the root `mise.toml`, the control plane), named
+noun first:
 
 | Task                         | Does                                                                                                                                                                                                                                                                                                                               |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -92,8 +99,12 @@ Everything that goes onto Cloudflare is a mise task (the root `mise.toml`, the c
 | `mise run app:deploy`        | This app onto Cloudflare at `courts.ubuntusoftware.net` (`scripts/app-deploy.mjs`): build, then D1 migrations before the new code (after it on the first deploy, which creates the D1).                                                                                                                                            |
 | `mise run app:register`      | This app registers itself with ID (`scripts/app-register.mjs`); already registered, it does nothing.                                                                                                                                                                                                                               |
 | `mise run all:deploy`        | All three, in that order.                                                                                                                                                                                                                                                                                                          |
+| `mise run app:undeploy`      | This app off Cloudflare, every piece (`scripts/app-undeploy.mjs`): its registration with ID, its Worker (domain, Durable Object, secrets, cron) and its D1. Its accounts and bookings are gone for good.                                                                                                                           |
+| `mise run id:undeploy`       | Gateweave ID off Cloudflare, every piece (`scripts/id-undeploy.mjs`): its Worker (domain, secrets, `OIDC_PAIRWISE_SECRET` included), its D1 and its logouts queue. Every account is gone, and every app that signs in through it gets new ids for everyone when ID is deployed again.                                              |
+| `mise run all:undeploy`      | Both, the app first.                                                                                                                                                                                                                                                                                                               |
 
-Each one logs in first if it needs to.
+Each one logs in first if it needs to. Undeploying and deploying again from nothing is how to know the deploy really
+works; each undeploy step that finds its piece already gone says so and carries on.
 
 ## Secrets
 
