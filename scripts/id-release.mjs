@@ -8,6 +8,8 @@ import { join, resolve } from "node:path";
 export const ID_RELEASE = "v0.10.4";
 /** Where ID answers: a Workers Custom Domain on ubuntusoftware.net (issue #2). */
 export const ID_DOMAIN = "id.ubuntusoftware.net";
+/** ID's Turnstile widget, by name, so id:deploy finds it again and id:undeploy deletes it. */
+export const ID_TURNSTILE_WIDGET = "gateweave-id";
 
 export const ID_ROOT = "vendor/gateweave-id";
 export const ID_WEB = join(ID_ROOT, "apps/web");

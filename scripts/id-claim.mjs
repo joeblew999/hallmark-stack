@@ -1,9 +1,9 @@
 // mise run id:claim: who owns Gateweave ID. Run by id:deploy, and on its own any time.
 //
-// ID without email has no way to prove who creates an account, so a new server is "unclaimed" and its first account owns it
-// (ID's src/server/auth/deployment.ts, claimDeployment; a trigger in its migrations/0014_deployment_hold.sql makes that
-// account deployment.owner_id). Like cloudflare:login, the claim is ID's Create account page, in the browser, where a password manager
-// makes and keeps the password; this task only reads the owner from ID's D1:
+// A new ID server's first account owns it (a trigger in ID's migrations/0014_deployment_hold.sql makes that account
+// deployment.owner_id). Like cloudflare:login, the claim is done in the browser: ID's Create account page, where a
+// password manager makes and keeps the password, and ID emails a code to prove the address (id:deploy turns ID's
+// email on). This task only reads the owner from ID's D1:
 //
 //   - No account yet: prints ID's address and waits, up to 10 minutes, for you to create an account there.
 //   - Owned by the email you are logged in to Cloudflare with: says so.
@@ -36,7 +36,7 @@ function owner() {
 let found = owner();
 if (found.users === 0) {
 	console.log(
-		`\nGateweave ID has no owner yet. Open https://${ID_DOMAIN} now and use Create account, as ${you}: the first account owns it.\nWaiting (up to 10 minutes)…`,
+		`\nGateweave ID has no owner yet. Open https://${ID_DOMAIN} now and use Create account, as ${you}: the first account owns it.\nID emails a code to ${you}; type it in there. Waiting (up to 10 minutes)…`,
 	);
 	const until = Date.now() + 10 * 60_000;
 	while (found.users === 0) {

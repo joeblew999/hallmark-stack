@@ -6,6 +6,8 @@
 //      among them, and its cron).
 //   4. Its logouts queue.
 //   5. Its D1 database (every account, workspace and registered app).
+//   6. Its Turnstile widget.
+//   7. Email Sending for its own name, id.ubuntusoftware.net (ubuntusoftware.net's own mail is not touched).
 //
 // Each is simply deleted; one already gone is reported and skipped. Everything in ID is gone for good, and every app
 // that signs in through it gets new ids for everyone when ID is deployed again.
@@ -13,7 +15,14 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { remove } from "./cloudflare.mjs";
-import { fetchId, ID_ROOT, ID_WRANGLER } from "./id-release.mjs";
+import {
+	fetchId,
+	ID_DOMAIN,
+	ID_ROOT,
+	ID_TURNSTILE_WIDGET,
+	ID_WRANGLER,
+	idWrangler,
+} from "./id-release.mjs";
 
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
@@ -35,4 +44,24 @@ remove(
 remove(`the Worker ${worker}`, ["delete", worker, "--force"], id);
 remove(`the queue ${queue}`, ["queues", "delete", queue], id);
 remove(`the D1 database ${database}`, ["d1", "delete", database, "--skip-confirmation"], id);
+
+// Neither says "not found" when the thing is already gone, so each is looked for first.
+const quiet = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+const widget = JSON.parse(idWrangler(["turnstile", "widget", "list", "--json"], quiet)).find(
+	({ name }) => name === ID_TURNSTILE_WIDGET,
+);
+if (widget) {
+	remove(
+		`the Turnstile widget ${ID_TURNSTILE_WIDGET}`,
+		["turnstile", "widget", "delete", widget.sitekey, "--skip-confirmation"],
+		id,
+	);
+} else {
+	console.log(`The Turnstile widget ${ID_TURNSTILE_WIDGET} was already gone.`);
+}
+if (idWrangler(["email", "sending", "list"], quiet).includes(ID_DOMAIN)) {
+	remove(`Email Sending for ${ID_DOMAIN}`, ["email", "sending", "disable", ID_DOMAIN], id);
+} else {
+	console.log(`Email Sending for ${ID_DOMAIN} was already gone.`);
+}
 console.log(`\nGateweave ID is off Cloudflare.\n`);
