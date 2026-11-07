@@ -29,19 +29,19 @@ same way, in one package instead of Track's four.
 
 Taken from Track at commit `b8b5ba0` (2026-11-06), checked 2026-11-07:
 
-| What             | Track                                                                                                                                              | Here                                                                                           |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Versions         | `apps/web/package.json`, `pnpm-workspace.yaml` catalog                                                                                             | `package.json`, the same versions                                                              |
-| Worker entry     | `apps/web/src/server.ts`: own routes first, then TanStack Start's handler                                                                          | `src/server.ts`: `/api/auth/*` to Better Auth, then TanStack Start                             |
-| Vite             | `@cloudflare/vite-plugin` (SSR environment), Tailwind, TanStack Start, React                                                                       | `vite.config.ts`, the same plugins                                                             |
-| Auth             | Better Auth on D1 via Drizzle; built on first use (`getAuth`), config free of `cloudflare:workers` so the CLI can generate the schema              | `src/server/auth/`: Track's sign-in through ID, copied (see Gateweave ID, below); no passwords |
-| D1               | Identity only, migrations from drizzle-kit                                                                                                         | `migrations/`, identity only                                                                   |
-| Durable Objects  | One per workspace, SQLite storage, the authority for its data                                                                                      | `VenueDO` (`src/server/venue-do.ts`), the authority for bookings                               |
-| Server functions | `createServerFn` with `.validator(zod)`, `getRequest()` for the session                                                                            | `src/lib/bookings.ts`                                                                          |
-| UI               | Tailwind 4 with shadcn/ui (`components.json`, new-york, radix-ui, lucide)                                                                          | the same `components.json`; shadcn's variables mapped onto Hallmark's tokens                   |
-| Tests            | Vitest in Node and in workerd (`@cloudflare/vitest-plugin`), the built app in workerd (`test/track-worker.ts`), Playwright on the production build | the same: `src/**/*.test.ts`, `test/` (workerd), `test/app/` (the built app), `e2e/`           |
-| Lint and format  | Biome (tabs, width 100)                                                                                                                            | `biome.json`, the same settings                                                                |
-| Not set up yet   | `.dev.vars` from a script with a random `BETTER_AUTH_SECRET`; a 503 without DB or secret                                                           | `scripts/dev-setup.mjs`; the same 503                                                          |
+| What             | Track                                                                                                                                              | Here                                                                                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Versions         | `apps/web/package.json`, `pnpm-workspace.yaml` catalog                                                                                             | `package.json`, the same versions                                                                                                                                                   |
+| Worker entry     | `apps/web/src/server.ts`: own routes first, then TanStack Start's handler                                                                          | `src/server.ts`: `/api/auth/*` to Better Auth, then TanStack Start                                                                                                                  |
+| Vite             | `@cloudflare/vite-plugin` (SSR environment), Tailwind, TanStack Start, React                                                                       | `vite.config.ts`, the same plugins                                                                                                                                                  |
+| Auth             | Better Auth on D1 via Drizzle; built on first use (`getAuth`), config free of `cloudflare:workers` so the CLI can generate the schema              | `src/server/auth/`: Track's sign-in through ID, copied (see Gateweave ID, below); no passwords                                                                                      |
+| D1               | Identity only, migrations from drizzle-kit                                                                                                         | `migrations/`, identity only                                                                                                                                                        |
+| Durable Objects  | One per workspace, SQLite storage, the authority for its data                                                                                      | `VenueDO` (`src/server/venue-do.ts`), the authority for bookings                                                                                                                    |
+| Server functions | `createServerFn` with `.validator(zod)`, `getRequest()` for the session                                                                            | `src/lib/bookings.ts`                                                                                                                                                               |
+| UI               | Tailwind 4 with shadcn/ui (`components.json`, new-york, radix-ui, lucide)                                                                          | the same `components.json`; shadcn's variables mapped onto Hallmark's tokens                                                                                                        |
+| Tests            | Vitest in Node and in workerd (`@cloudflare/vitest-plugin`), the built app in workerd (`test/track-worker.ts`), Playwright on the production build | Vitest in Node and in workerd, Playwright on the production build; not Track's tests of its own code: `src/**/*.test.ts`, `test/` (workerd, with the real `wrangler.jsonc`), `e2e/` |
+| Lint and format  | Biome (tabs, width 100)                                                                                                                            | `biome.json`, the same settings                                                                                                                                                     |
+| Not set up yet   | `.dev.vars` from a script with a random `BETTER_AUTH_SECRET`; a 503 without DB or secret                                                           | `scripts/dev-setup.mjs`; the same 503                                                                                                                                               |
 
 Left out on purpose, because a booking site doesn't need them: Track's protocol, sync-server and sync-client packages
 (realtime sync, the IndexedDB replica, WebSockets, the service worker), MCP, the GitHub app, intake email,
@@ -64,7 +64,7 @@ this stack, on this design, instead of writing standalone HTML:
 3. **`package.json`, `components.json`, `.hallmark/preflight.json`**: what the pre-flight reads to know the framework.
 4. **`.claude/skills/hallmark/`**: Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT). Claude Code loads it
    as a project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time
-   lint on every CSS change, and `aube run hallmark` runs its full lint on the rendered production build, in CI too.
+   lint on every CSS change, and `e2e/hallmark.spec.ts` runs its full lint on the rendered production build in every Playwright run, so in CI too (`aube run hallmark` runs just that spec).
 
 ## Gateweave ID: the only way in
 
@@ -95,14 +95,13 @@ own pages. Courts has no passwords, no sign-up and no login form.
 Gateweave copies these between its own products, "owned here now, the way shadcn/ui components are", ID's
 `AGENTS.md`). Each file says at the top what it came from at `b8b5ba0`, and what changed:
 
-| Here                                                                | From Track's `apps/web/`                                                              | What it does                                                                                         |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                                                     | Sign-in through ID; back-channel logout; which ID session each session came from                     |
-| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                                               | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting |
-| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                                                  | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too   |
-| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                                           | Limits that hold across every isolate, in a Durable Object                                           |
-| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts`                        | The button that waits for the script; refusals in words of ours                                      |
-| `test/app/`                                                         | `test/track-worker.ts`, `oidc-provider.ts`, `oidc-sign-in.test.ts`, `global-setup.ts` | The built app in workerd against a stand-in ID: what the real ID can't be made to do on demand       |
+| Here                                                                | From Track's `apps/web/`                                       | What it does                                                                                         |
+| ------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                              | Sign-in through ID; back-channel logout; which ID session each session came from                     |
+| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                        | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting |
+| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                           | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too   |
+| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                    | Limits that hold across every isolate, in a Durable Object                                           |
+| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts` | The button that waits for the script; refusals in words of ours                                      |
 
 **Not copied, because they exist for Track's own accounts or its other parts:** passwords, email verification and
 password reset (ID's), account linking, GitHub, workspaces, agents and MCP, the demo,
@@ -204,8 +203,6 @@ GitHub's CI runs, and the same here.
   `chromium-bidi` 157 or newer, which Google has published since October 2026 without npm provenance, and aube's
   trust policy refuses that. 25.12.0 is the last release built on `chromium-bidi` 17.0.2, which has it. Checked
   2026-11-07 against the npm registry.
-- **`miniflare` is held at `5.20261023.3-beta`,** the one Wrangler 4.156.0 brings, for `test/app/`. Track's tests pin
-  `5.20261023.0-beta`; one copy, the same as the deploys run, is the choice here.
 - **Biome** has two CSS rules turned off for `src/styles/` (`biome.json`). `!important` is how Hallmark's
   reduced-motion and slot rules must win. The specificity-order warnings there are between selectors that never
   match the same element.

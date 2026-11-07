@@ -1,7 +1,5 @@
 {
 	"extends": "../tsconfig.json",
 	"compilerOptions": { "types": ["vite/client", "@cloudflare/vitest-plugin/types"] },
-	"include": ["./**/*.ts", "../src/server/env.d.ts", "../worker-configuration.d.ts"],
-	// The built app in workerd, driven from Node: its own settings (test/app/tsconfig.json).
-	"exclude": ["./app"]
+	"include": ["./**/*.ts", "../src/server/env.d.ts", "../worker-configuration.d.ts"]
 }
