@@ -27,8 +27,12 @@ export const PREFIX = "e2e-";
 export const LIKE = `'${PREFIX}%@example.com'`;
 
 export type Person = { name: string; email: string };
-export const people = (): { a: Person; b: Person } =>
-	JSON.parse(readFileSync(join(STATE, "people.json"), "utf8"));
+/** Where each person's name and address are kept, by the setup test that made them. */
+export const personOf = (who: "a" | "b") => join(STATE, `${who}.person.json`);
+export const people = (): { a: Person; b: Person } => ({
+	a: JSON.parse(readFileSync(personOf("a"), "utf8")),
+	b: JSON.parse(readFileSync(personOf("b"), "utf8")),
+});
 
 /** One SQL statement on Gateweave ID's D1, answered as rows. */
 export function inId(sql: string): Record<string, unknown>[] {
@@ -60,4 +64,15 @@ export async function open(page: Page, path: string) {
 export async function signedIn(page: Page, origin: string) {
 	const answer = await page.context().request.get(`${origin}/api/auth/get-session`);
 	return (await answer.json()) !== null;
+}
+
+/**
+ * Presses courts' header "Sign in" and waits until courts' own callback from Gateweave ID has answered: the sign-in is
+ * done when that answer sets the session, however long the trip through ID took (issue #5 measures that, in traces).
+ * ID's hops in between are redirects, so no page of theirs is ever shown to wait for.
+ */
+export async function signIn(page: Page) {
+	const back = page.waitForResponse((r) => r.url().startsWith(`${COURTS}/api/auth/callback/`));
+	await page.locator(".nav").getByRole("button", { name: "Sign in" }).click();
+	await back;
 }

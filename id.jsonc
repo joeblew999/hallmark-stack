@@ -1,5 +1,5 @@
 {
-	// Our values for Gateweave ID's two deployments, and nothing else: its bindings (D1, queue, Durable Objects, crons)
+	// Our values for Gateweave ID's two deployments (where it runs, its traces, its domain, its vars), and nothing else: its bindings (D1, queue, Durable Objects, crons)
 	// come from ID's own wrangler.jsonc at the pinned release. scripts/id-deploy.mjs writes these into that file's
 	// env.staging and env.production (Wrangler's experimental_patchConfig), with the names Wrangler gives an
 	// environment (id-<env>, its D1 id-<env>, its queue id-logouts-<env>), and deploys with CLOUDFLARE_ENV. The
@@ -8,6 +8,8 @@
 	"name": "id",
 	"env": {
 		"staging": {
+			"placement": { "region": "aws:ap-northeast-1" },
+			"observability": { "enabled": true, "traces": { "enabled": true } },
 			"routes": [{ "pattern": "id-staging.ubuntusoftware.net", "custom_domain": true }],
 			"vars": {
 				"BETTER_AUTH_URL": "https://id-staging.ubuntusoftware.net",
@@ -16,6 +18,8 @@
 			}
 		},
 		"production": {
+			"placement": { "region": "aws:ap-northeast-1" },
+			"observability": { "enabled": true, "traces": { "enabled": true } },
 			"routes": [{ "pattern": "id.ubuntusoftware.net", "custom_domain": true }],
 			"vars": {
 				"BETTER_AUTH_URL": "https://id.ubuntusoftware.net",

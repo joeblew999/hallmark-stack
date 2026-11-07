@@ -8,6 +8,12 @@ export const ENVIRONMENTS = ["staging", "production"];
 
 /** Where each environment's D1 databases are made: next to the venue's people, in Thailand (issue #5). */
 export const LOCATION = "apac";
+/** Where every Worker runs, whoever calls it: next to its D1 in LOCATION (Workers placement, issue #5). Each request
+ * makes several D1 queries, and by default a Worker runs next to its caller, so a caller far from the D1 paid one long
+ * round trip per query (210 ms each from the US). aws:ap-northeast-1 is Tokyo, the cloud region measured nearest
+ * Asia-Pacific's D1s: on courts-staging, 2026-11-07, D1 queries took 71-74 ms placed there, 80-107 ms at Hong Kong
+ * (aws:ap-east-1), 125-157 ms at Singapore (aws:ap-southeast-1). Measure again if Cloudflare moves APAC D1. */
+export const PLACEMENT = "aws:ap-northeast-1";
 
 /** The environment this run is for, from the task's argument (mise passes it), or CLOUDFLARE_ENV. */
 export function chooseEnvironment() {

@@ -17,7 +17,14 @@ import { ENVIRONMENTS } from "./scripts/environments.mjs";
 const picked = process.argv.flatMap((arg, i, argv) =>
 	arg === "--project" ? [argv[i + 1]] : arg.startsWith("--project=") ? [arg.slice(10)] : [],
 );
-const env = picked.length === 1 ? (picked[0] ?? "") : "";
+// Playwright loads this file again in each test worker, without the command line: there the environment is the one the
+// main process already put in CLOUDFLARE_ENV, which every worker inherits (TEST_WORKER_INDEX is set only in workers).
+const env =
+	process.env.TEST_WORKER_INDEX !== undefined
+		? (process.env.CLOUDFLARE_ENV ?? "")
+		: picked.length === 1
+			? (picked[0] ?? "")
+			: "";
 if (!ENVIRONMENTS.includes(env)) {
 	throw new Error(
 		`Pick one environment: --project ${ENVIRONMENTS.join(" or --project ")} (mise run all:e2e <env>).`,

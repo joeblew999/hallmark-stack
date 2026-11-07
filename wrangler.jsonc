@@ -30,6 +30,7 @@
 	// Where a venue's Durable Object starts (src/server/venue.ts), next to its people: the venues are in Thailand,
 	// and D1 is made there too (issue #5).
 	"vars": { "LOCATION": "apac" },
+	"placement": { "region": "aws:ap-northeast-1" },
 	"secrets": { "required": ["BETTER_AUTH_SECRET"] },
 	"env": {
 		"staging": {
@@ -46,6 +47,7 @@
 				]
 			},
 			"vars": { "LOCATION": "apac" },
+			"placement": { "region": "aws:ap-northeast-1" },
 			"secrets": { "required": ["BETTER_AUTH_SECRET"] }
 		},
 		"production": {
@@ -61,6 +63,7 @@
 				]
 			},
 			"vars": { "LOCATION": "apac" },
+			"placement": { "region": "aws:ap-northeast-1" },
 			"secrets": { "required": ["BETTER_AUTH_SECRET"] }
 		}
 	}

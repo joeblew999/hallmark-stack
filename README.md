@@ -144,7 +144,9 @@ environment's names and address back from the config as Wrangler does, so nothin
 - **Where the data lives (issue #5):** both D1s are made in Asia-Pacific (`--location apac`, `LOCATION` in
   `scripts/environments.mjs`) before their first deploy, and the bookings Durable Object is asked for with
   `locationHint` `apac` (`LOCATION` in the config's vars, `src/server/venue.ts`). Both only count when the thing is first
-  made: moving one means making it again. Tracing is on (`observability.traces`), so each D1 and binding call is timed.
+  made: moving one means making it again. Both Workers run next to their D1s whoever calls them (`placement.region`, `PLACEMENT`
+  in `scripts/environments.mjs`: Tokyo, measured nearest APAC D1); left to run next to the caller, a sign-in from the US
+  paid 210 ms for each of its D1 queries. Tracing is on (`observability.traces`), so each D1 and binding call is timed.
 - **ID** is its pinned release, fetched into the git-ignored `vendor/gateweave-id/`, with our two environments written
   into its `wrangler.jsonc` from `id.jsonc`, and deployed by ID's own deploy script, as Gateweave deploy theirs. It is
   set up for the internet (ID's `docs/self-hosting.md`): email from its own name (Cloudflare Email Sending), so

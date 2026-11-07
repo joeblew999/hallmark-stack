@@ -79,6 +79,8 @@ function writeEnvironments() {
 	const blocks = {};
 	for (const each of ENVIRONMENTS) {
 		blocks[each] = {
+			placement: ours.env[each].placement,
+			observability: ours.env[each].observability,
 			routes: ours.env[each].routes,
 			vars: ours.env[each].vars,
 			d1_databases: theirs.d1_databases.map(({ database_id, ...d1 }) => ({

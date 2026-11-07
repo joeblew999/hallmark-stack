@@ -33,10 +33,8 @@ const databases = JSON.parse(
 if (databases.some(({ name }) => name === database)) {
 	console.log(`The D1 database ${database} is already there; left as it is.`);
 } else {
+	// --update-config=false: wrangler.jsonc names each D1 by name only, so the file is left as it is.
 	wrangler(["d1", "create", database, "--location", location, "--update-config=false"]);
-	if (spawnSync("git", ["diff", "--quiet", "--", "wrangler.jsonc"]).status !== 0) {
-		throw new Error("wrangler d1 create changed wrangler.jsonc; it must name D1 by name only");
-	}
 }
 
 run("vite", ["build"]);

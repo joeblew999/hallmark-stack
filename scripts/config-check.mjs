@@ -5,7 +5,7 @@
 // them into ID's own wrangler.jsonc).
 import { existsSync } from "node:fs";
 import { experimental_readRawConfig, unstable_readConfig } from "wrangler";
-import { ENVIRONMENTS, LOCATION } from "./environments.mjs";
+import { ENVIRONMENTS, LOCATION, PLACEMENT } from "./environments.mjs";
 
 const problems = [];
 const need = (ok, what) => {
@@ -38,6 +38,7 @@ for (const env of ENVIRONMENTS) {
 	);
 	need(c.vars?.LOCATION === LOCATION, `${at}: vars.LOCATION "${LOCATION}"`);
 	need(c.observability?.traces?.enabled === true, `${at}: observability.traces.enabled`);
+	need(c.placement?.region === PLACEMENT, `${at}: placement.region "${PLACEMENT}"`);
 	need((c.triggers?.crons ?? []).length > 0, `${at}: the daily cron`);
 }
 
@@ -60,6 +61,8 @@ for (const env of ENVIRONMENTS) {
 	);
 	need(Boolean(e.vars?.EMAIL_FROM), `${at}: vars.EMAIL_FROM`);
 	need(e.vars?.CHECK_BREACHED_PASSWORDS === "1", `${at}: vars.CHECK_BREACHED_PASSWORDS "1"`);
+	need(e.placement?.region === PLACEMENT, `${at}: placement.region "${PLACEMENT}"`);
+	need(e.observability?.traces?.enabled === true, `${at}: observability.traces.enabled`);
 }
 
 if (problems.length) {
