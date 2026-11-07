@@ -1,19 +1,19 @@
-// This app's identity on Cloudflare and at Gateweave ID, in one place: its Worker, D1 database and address from its own
-// wrangler.jsonc, and its id and name at ID. Used by app-deploy.mjs, app-register.mjs and app-undeploy.mjs.
-import { readFileSync } from "node:fs";
+// This app's identity on Cloudflare and at Gateweave ID, in one place: its Worker, D1 database, address and location
+// for an environment, read from wrangler.jsonc as Wrangler reads it, and its id and name at ID. Used by app-deploy.mjs,
+// app-register.mjs, app-undeploy.mjs and the live suite (e2e/live/target.ts).
+import { unstable_readConfig } from "wrangler";
 
-const config = readFileSync("wrangler.jsonc", "utf8");
-const pick = (pattern, what) => {
-	const value = pattern.exec(config)?.[1];
-	if (!value) throw new Error(`wrangler.jsonc has no ${what}`);
-	return value;
-};
+/** The Worker, its D1 database, its Custom Domain and where its data lives, for `env`, as Wrangler resolves them. */
+export function appConfig(env) {
+	const config = unstable_readConfig({ config: "wrangler.jsonc", env });
+	const domain = config.routes?.find(
+		(route) => typeof route === "object" && route.custom_domain,
+	)?.pattern;
+	const database = config.d1_databases.find(({ binding }) => binding === "DB")?.database_name;
+	if (!domain || !database) throw new Error(`wrangler.jsonc env.${env} has no Custom Domain or D1`);
+	return { worker: config.name, database, domain, location: config.vars?.LOCATION };
+}
 
-/** The Worker's name, its D1 database and its Custom Domain, as wrangler.jsonc sets them. */
-export const APP_WORKER = pick(/"name":\s*"([^"]+)"/, "Worker name");
-export const APP_DATABASE = pick(/"database_name":\s*"([^"]+)"/, "D1 database_name");
-export const APP_DOMAIN = pick(/"pattern":\s*"([^"]+)"/, "route pattern");
-
-/** This app's id at Gateweave ID, and its name on ID's pages. */
+/** This app's id at each Gateweave ID, and its name on ID's pages. */
 export const APP_ID = "courts";
 export const APP_NAME = "Eastfield Courts";

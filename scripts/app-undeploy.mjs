@@ -1,4 +1,6 @@
-// mise run app:undeploy: this app off Cloudflare, every piece of it, so app:deploy can be proved from nothing.
+// mise run app:undeploy <env>: courts-<env> off Cloudflare, every piece of it, so app:deploy can be proved from nothing.
+// Every name comes from that environment's config and every command runs with its CLOUDFLARE_ENV, so undeploying
+// staging can't touch production.
 //
 //   1. The Cloudflare login (scripts/cloudflare-login.mjs).
 //   2. Its registration with Gateweave ID (the oauth_client row app:register made).
@@ -7,10 +9,13 @@
 //
 // Each is simply deleted; one already gone is reported and skipped. Its accounts and bookings are gone for good.
 import { execFileSync } from "node:child_process";
-import { APP_DATABASE, APP_ID, APP_WORKER } from "./app-config.mjs";
+import { APP_ID, appConfig } from "./app-config.mjs";
 import { APP_WRANGLER, remove } from "./cloudflare.mjs";
+import { chooseEnvironment } from "./environments.mjs";
 import { fetchId, ID_ROOT, ID_WRANGLER } from "./id-release.mjs";
 
+const env = chooseEnvironment();
+const { worker: APP_WORKER, database: APP_DATABASE } = appConfig(env);
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
 fetchId();

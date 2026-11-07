@@ -1,15 +1,22 @@
 // What the live suite runs against, from the deploy scripts' own settings: courts' address and D1, and Gateweave ID's
-// address and D1. Nothing here is written twice. The tests ask this file, never for a URL of their own.
+// address and D1, for the environment in CLOUDFLARE_ENV (staging or production), which every Wrangler call here
+// inherits. Nothing here is written twice. The tests ask this file, never for a URL of their own.
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { APP_DOMAIN } from "../../scripts/app-config.mjs";
+import { appConfig } from "../../scripts/app-config.mjs";
 import { APP_WRANGLER } from "../../scripts/cloudflare.mjs";
-import { ID_DOMAIN, idWrangler } from "../../scripts/id-release.mjs";
+import { ENVIRONMENTS } from "../../scripts/environments.mjs";
+import { idConfig, idWrangler } from "../../scripts/id-release.mjs";
 
-export const COURTS = `https://${APP_DOMAIN}`;
-export const ID = `https://${ID_DOMAIN}`;
+/** The environment under test: staging or production, never the development top level. */
+export const ENV = process.env.CLOUDFLARE_ENV ?? "";
+if (!ENVIRONMENTS.includes(ENV)) {
+	throw new Error(`CLOUDFLARE_ENV must be one of ${ENVIRONMENTS.join(", ")}, not "${ENV}".`);
+}
+export const COURTS = `https://${appConfig(ENV).domain}`;
+export const ID = `https://${idConfig(ENV).domain}`;
 
 /** Where one run keeps its two people and their signed-in browsers. Git-ignored. */
 export const STATE = "e2e/live/.state";

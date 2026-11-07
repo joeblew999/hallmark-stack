@@ -27,7 +27,7 @@ export function remove(what, args, { wrangler, cwd = "." }) {
 
 /**
  * A deploy Cloudflare accepted can still not work (a missing secret, a bad migration, a certificate not issued yet), so
- * each deploy asks its real address: every 5 seconds for up to two minutes, until `check(response, body)` passes.
+ * each deploy asks its real address: every second for up to two minutes, until `check(response, body)` passes.
  * Anything else stops the deploy.
  */
 export async function waitUntilUp(what, url, check = (response) => response.ok, init = {}) {
@@ -44,7 +44,7 @@ export async function waitUntilUp(what, url, check = (response) => response.ok, 
 		} catch (error) {
 			last = error.cause?.code ?? error.message;
 		}
-		await new Promise((done) => setTimeout(done, 5_000));
+		await new Promise((done) => setTimeout(done, 1_000));
 	}
 	throw new Error(`${what} isn't up after two minutes (${url}: ${last}).`);
 }

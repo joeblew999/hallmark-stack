@@ -1,4 +1,5 @@
-// mise run id:claim: who owns Gateweave ID. Run by id:deploy, and on its own any time.
+// mise run id:claim <env>: who owns that environment's Gateweave ID (id-<env>). Run by id:deploy, and on its own any
+// time. Each environment's ID is a server of its own, with an owner of its own.
 //
 // A new ID server's first account owns it (a trigger in ID's migrations/0014_deployment_hold.sql makes that account
 // deployment.owner_id). Like cloudflare:login, the claim is done in the browser: ID's Create account page, where a
@@ -9,10 +10,13 @@
 //   - Owned by the email you are logged in to Cloudflare with: says so.
 //   - Owned by anyone else: stops. Someone got there first; id:undeploy then id:deploy starts again.
 import { execFileSync } from "node:child_process";
-import { fetchId, ID_DOMAIN, idWrangler } from "./id-release.mjs";
+import { chooseEnvironment } from "./environments.mjs";
+import { fetchId, idConfig, idWrangler } from "./id-release.mjs";
 
+const env = chooseEnvironment();
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 fetchId();
+const ID_DOMAIN = idConfig(env).domain;
 
 const you = JSON.parse(execFileSync("wrangler", ["whoami", "--json"], { encoding: "utf8" })).email;
 
@@ -48,7 +52,7 @@ if (found.users === 0) {
 }
 if (found.email?.toLowerCase() !== you.toLowerCase()) {
 	throw new Error(
-		`Gateweave ID is owned by ${found.email ?? "nobody"}, not ${you}. Start it again: mise run id:undeploy, then mise run id:deploy.`,
+		`Gateweave ID is owned by ${found.email ?? "nobody"}, not ${you}. Start it again: mise run id:undeploy ${env}, then mise run id:deploy ${env}.`,
 	);
 }
 console.log(`Gateweave ID is claimed by ${you}.`);

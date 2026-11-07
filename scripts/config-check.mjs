@@ -5,10 +5,7 @@
 // them into ID's own wrangler.jsonc).
 import { existsSync } from "node:fs";
 import { experimental_readRawConfig, unstable_readConfig } from "wrangler";
-
-export const ENVIRONMENTS = ["staging", "production"];
-/** Where every environment's D1 and Durable Objects are made: next to its users (issue #5). */
-export const LOCATION = "apac";
+import { ENVIRONMENTS, LOCATION } from "./environments.mjs";
 
 const problems = [];
 const need = (ok, what) => {
