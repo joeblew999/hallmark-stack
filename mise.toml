@@ -42,7 +42,7 @@ run = "node scripts/cloudflare-logout.mjs"
 
 [tasks."id:deploy"]
 usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
-description = "One environment's Gateweave ID (pinned v0.10.6) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
+description = "One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
 run = "node scripts/id-deploy.mjs {{usage.env}}"
 
 [tasks."id:claim"]

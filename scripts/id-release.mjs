@@ -12,9 +12,9 @@ import {
 import { ENVIRONMENTS } from "./environments.mjs";
 
 /** ID's release, from github.com/gateweavehq/id/releases, the newest on 2026-11-07, when it was checked. */
-export const ID_RELEASE = "v0.10.6";
+export const ID_RELEASE = "v0.11.4";
 /** The commit that tag named then. A tag can be moved; the commit can't, so it is checked on every fetch. */
-export const ID_COMMIT = "793ce73c1ce8d33d829db30d9c56bd97d8a536c2";
+export const ID_COMMIT = "fd09b4b319307f0194e0acef6e7bfcb03c53d8a7";
 export const ID_ROOT = "vendor/gateweave-id";
 export const ID_WEB = join(ID_ROOT, "apps/web");
 

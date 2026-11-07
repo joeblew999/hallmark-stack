@@ -64,7 +64,7 @@ export function SignInButton({
  * Signs out of this site, and leaves the person signed in at Gateweave ID, as Track does. Signing out
  * at ID (its account page) signs them out here too, through back-channel logout. Signing out of both
  * in one go, through ID's end-session, waits on two problems in Gateweave ID, seen on v0.10.4 and
- * still in v0.10.6 (issue #3).
+ * still in v0.11.4 (issue #7).
  */
 export function SignOutButton({ className }: { className?: string }) {
 	const [pending, setPending] = useState(false);
