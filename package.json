@@ -9,6 +9,7 @@
 		"dev": "vite dev --port 4710 --strictPort",
 		"build": "vite build",
 		"preview": "vite preview --port 4711 --strictPort",
+		"snapshot": "node scripts/snapshot.mjs",
 		"deploy": "vite build && wrangler deploy",
 		"typegen": "wrangler types && tsr generate",
 		"typecheck": "wrangler types && tsr generate && tsc",

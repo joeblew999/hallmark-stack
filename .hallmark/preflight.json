@@ -1,0 +1,13 @@
+{
+	"scanned": "2026-11-07",
+	"findings": {
+		"fonts": "Radio Canada Big + Radio Canada, self-hosted via @fontsource (package.json, src/styles.css)",
+		"palette": "OKLCH tokens in Tailwind 4 @theme static (src/styles/tokens.css); shadcn variables mapped onto them (src/styles.css)",
+		"motion": "none beyond CSS transitions on state",
+		"spacing": "Hallmark scale in :root (src/styles/tokens.css), multiples of Tailwind's 4px unit",
+		"framework": "TanStack Start 1.169 (React 19, file routes in src/routes) on Cloudflare Workers via @cloudflare/vite-plugin; Tailwind 4; shadcn/ui new-york (components.json)",
+		"design": "DESIGN.md at the root: the locked system (Grid)"
+	},
+	"preserve": ["DESIGN.md system", "font stack", "palette", "spacing scale", "TanStack Start routes and React components", "Tailwind 4 @theme tokens"],
+	"introduce": ["shape and composition per page within the locked system", "gates", "hero discipline", "slots"]
+}

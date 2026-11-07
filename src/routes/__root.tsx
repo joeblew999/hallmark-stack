@@ -13,7 +13,10 @@ export const Route = createRootRoute({
 				content: "See which tennis, padel and five-a-side courts are free at Eastfield, choose an hour and book.",
 			},
 		],
-		links: [{ rel: "stylesheet", href: appCss }],
+		links: [
+			{ rel: "stylesheet", href: appCss },
+			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+		],
 		// Hallmark's no-script rule: content is visible without JavaScript; `.js` scopes what only script shows.
 		scripts: [{ children: "document.documentElement.classList.add('js')" }],
 	}),
