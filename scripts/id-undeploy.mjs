@@ -59,8 +59,22 @@ if (widget) {
 } else {
 	console.log(`The Turnstile widget ${ID_TURNSTILE_WIDGET} was already gone.`);
 }
+// --force: without it, `disable` asks, takes no answer as no, says "Not disabling." and still exits 0. Disabling it
+// is what removes the six DNS records Email Sending made under ID's name, so it is checked after.
 if (idWrangler(["email", "sending", "list"], quiet).includes(ID_DOMAIN)) {
-	remove(`Email Sending for ${ID_DOMAIN}`, ["email", "sending", "disable", ID_DOMAIN], id);
+	remove(
+		`Email Sending for ${ID_DOMAIN}`,
+		["email", "sending", "disable", ID_DOMAIN, "--force"],
+		id,
+	);
+	if (idWrangler(["email", "sending", "list"], quiet).includes(ID_DOMAIN)) {
+		throw new Error(`Email Sending for ${ID_DOMAIN} is still on after disabling it.`);
+	}
+	// Seen 2026-11-07: disabling removes five of the six records (the ones Cloudflare locks to email) but not the
+	// DMARC record it made as an ordinary one, and Wrangler's login has no scope that can edit DNS.
+	console.log(
+		`Left by Cloudflare: TXT _dmarc.${ID_DOMAIN}. Wrangler can't edit DNS; delete it in the dashboard (DNS, Records) or through the Cloudflare API.`,
+	);
 } else {
 	console.log(`Email Sending for ${ID_DOMAIN} was already gone.`);
 }
