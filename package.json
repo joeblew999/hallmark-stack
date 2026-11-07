@@ -18,6 +18,11 @@
 		"test": "vitest run",
 		"test:e2e": "playwright test",
 		"hallmark": "node .claude/skills/hallmark/scripts/sloplint.mjs src/styles.css src/styles --url http://localhost:4710/ --render --genre editorial",
+		"auth:schema": "aube dlx auth@1.7.16 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:local": "wrangler d1 migrations apply DB --local",
+		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+		"dev:setup": "node scripts/dev-setup.mjs",
 		"verify": "aube run check && aube run typecheck && aube run test && aube run build"
 	},
 	"dependencies": {

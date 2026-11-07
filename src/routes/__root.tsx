@@ -1,5 +1,5 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -10,7 +10,8 @@ export const Route = createRootRoute({
 			{ title: "Eastfield Courts: book tennis, padel and five-a-side by the hour" },
 			{
 				name: "description",
-				content: "See which tennis, padel and five-a-side courts are free at Eastfield, choose an hour and book.",
+				content:
+					"See which tennis, padel and five-a-side courts are free at Eastfield, choose an hour and book.",
 			},
 		],
 		links: [
@@ -25,8 +26,12 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
+	// Set once React has hydrated: the end-to-end tests wait for it before they click.
+	useEffect(() => {
+		document.documentElement.dataset.hydrated = "true";
+	}, []);
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 			</head>

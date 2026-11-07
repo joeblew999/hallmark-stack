@@ -1,0 +1,5 @@
+# Copied to .dev.vars by `aube run dev:setup`, which fills in a random secret.
+# Signs sessions. Generate with: openssl rand -base64 32
+BETTER_AUTH_SECRET=
+# Optional: pins the app's public URL; inferred from each request when unset.
+# BETTER_AUTH_URL=

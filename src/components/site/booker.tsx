@@ -6,7 +6,11 @@ import { useBooking } from "./booking";
  * The hero's booker on the ultramarine field: the chosen hour at poster scale, then day, start time and court.
  * `onBook` sends the booking; it resolves to the line shown under the button.
  */
-export function Booker({ onBook }: { onBook: (courtId: string, date: string, hour: Hour) => Promise<string> }) {
+export function Booker({
+	onBook,
+}: {
+	onBook: (courtId: string, date: string, hour: Hour) => Promise<string>;
+}) {
 	const { days, day, hour, court, setDay, setHour, pick, isTaken } = useBooking();
 	const [message, setMessage] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -30,7 +34,13 @@ export function Booker({ onBook }: { onBook: (courtId: string, date: string, hou
 			data-kind="product"
 			data-alt="A screenshot of the live booking screen"
 		>
-			<form onSubmit={submit} onChange={() => setMessage("")} noValidate aria-label="Book a court">
+			<form
+				method="post"
+				onSubmit={submit}
+				onChange={() => setMessage("")}
+				noValidate
+				aria-label="Book a court"
+			>
 				<div className="booker__when" aria-live="polite">
 					<p className="booker__hour">
 						<output>{hour}</output>

@@ -4,15 +4,15 @@ A sports booking site (sample brand: Eastfield Courts) built with [Hallmark](htt
 
 ## What's here
 
-| Path | What it is |
-| --- | --- |
-| `index.html` | The page, plus the plain-JS behaviour: booker, site plan, sport switcher, sticky bar, `/` search |
-| `page.css` | The page styles. Lines 1–7 are the Hallmark stamp: every design decision, the critique line and the answered finish checks |
-| `tokens.css`, `base.css` | Written by `theme.mjs scaffold grid`: the Grid theme's tokens and Hallmark's base rules |
-| `images/` | Two photographs from Hallmark's library (credited in the page footer) |
-| `.hallmark/log.json`, `.hallmark/salt` | Hallmark's build log; the next build reads it so it doesn't repeat this one |
-| `.claude/skills/hallmark/` | Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT), so the repo works without a global install |
-| `.claude/settings.json` | Hallmark's edit-time lint hook, pointed at the pinned copy via `$CLAUDE_PROJECT_DIR` |
+| Path                                   | What it is                                                                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `index.html`                           | The page, plus the plain-JS behaviour: booker, site plan, sport switcher, sticky bar, `/` search                           |
+| `page.css`                             | The page styles. Lines 1–7 are the Hallmark stamp: every design decision, the critique line and the answered finish checks |
+| `tokens.css`, `base.css`               | Written by `theme.mjs scaffold grid`: the Grid theme's tokens and Hallmark's base rules                                    |
+| `images/`                              | Two photographs from Hallmark's library (credited in the page footer)                                                      |
+| `.hallmark/log.json`, `.hallmark/salt` | Hallmark's build log; the next build reads it so it doesn't repeat this one                                                |
+| `.claude/skills/hallmark/`             | Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT), so the repo works without a global install                     |
+| `.claude/settings.json`                | Hallmark's edit-time lint hook, pointed at the pinned copy via `$CLAUDE_PROJECT_DIR`                                       |
 
 `.hallmark/shots/` (render screenshots) is git-ignored, as Hallmark ships it.
 

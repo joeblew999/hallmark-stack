@@ -10,7 +10,9 @@ import { join } from "node:path";
 
 const PORT = 4712;
 const out = "dist/snapshot";
-const preview = spawn("vite", ["preview", "--port", String(PORT), "--strictPort"], { stdio: "inherit" });
+const preview = spawn("vite", ["preview", "--port", String(PORT), "--strictPort"], {
+	stdio: "inherit",
+});
 
 try {
 	let html;
@@ -30,16 +32,27 @@ try {
 	// A <base> at the folder it was served from keeps the relative asset paths working after that.
 	const toRoot =
 		"<script>{const d=location.pathname.replace(/[^/]*$/,'');const b=document.createElement('base');b.href=location.origin+d;document.head.prepend(b);if(location.pathname!=='/')history.replaceState(null,'','/'+location.search+location.hash)}</script>";
-	writeFileSync(join(out, "index.html"), html.replaceAll('"/assets/', '"./assets/').replaceAll('"/images/', '"./images/').replaceAll('"/favicon.svg"', '"./favicon.svg"').replace("<head>", `<head>${toRoot}`));
+	writeFileSync(
+		join(out, "index.html"),
+		html
+			.replaceAll('"/assets/', '"./assets/')
+			.replaceAll('"/images/', '"./images/')
+			.replaceAll('"/favicon.svg"', '"./favicon.svg"')
+			.replace("<head>", `<head>${toRoot}`),
+	);
 
 	// Inside the assets folder, a stylesheet's url(/assets/x) is its sibling.
 	for (const name of readdirSync(join(out, "assets"))) {
 		const file = join(out, "assets", name);
-		if (name.endsWith(".css")) writeFileSync(file, readFileSync(file, "utf8").replaceAll("/assets/", "./"));
+		if (name.endsWith(".css"))
+			writeFileSync(file, readFileSync(file, "utf8").replaceAll("/assets/", "./"));
 		// The router's manifest names assets from the root ("/assets/x"); the page's <base> resolves "./assets/x".
 		if (name.endsWith(".js")) {
 			let js = readFileSync(file, "utf8");
-			for (const q of ['"', "'", "`"]) js = js.replaceAll(`${q}/assets/`, `${q}./assets/`).replaceAll(`${q}/favicon.svg${q}`, `${q}./favicon.svg${q}`);
+			for (const q of ['"', "'", "`"])
+				js = js
+					.replaceAll(`${q}/assets/`, `${q}./assets/`)
+					.replaceAll(`${q}/favicon.svg${q}`, `${q}./favicon.svg${q}`);
 			writeFileSync(file, js);
 		}
 	}

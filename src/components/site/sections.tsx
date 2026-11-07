@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { COURTS, HOURS, type Hour } from "#/lib/courts";
 import { useBooking } from "./booking";
@@ -5,8 +6,8 @@ import { useBooking } from "./booking";
 const scrollToBooker = () => document.getElementById("book")?.scrollIntoView();
 
 /** The search-led bar: the wordmark, a search that jumps the booker to a court or a time, and Book. */
-export function SiteNav() {
-	const { pick, setHour, court } = useBooking();
+export function SiteNav({ signedIn }: { signedIn: boolean }) {
+	const { pick, setHour } = useBooking();
 	const input = useRef<HTMLInputElement>(null);
 	const [message, setMessage] = useState("");
 
@@ -34,7 +35,6 @@ export function SiteNav() {
 			setMessage("");
 			scrollToBooker();
 		} else setMessage("No court or time matches that. Try “padel” or “18:00”.");
-		void court;
 	}
 
 	return (
@@ -44,27 +44,35 @@ export function SiteNav() {
 					<span>Eastfield</span>
 					<span>Courts</span>
 				</a>
-				<form className="search" role="search" onSubmit={search}>
-					<label className="visually-hidden" htmlFor="q">
-						Find a court or a time
-					</label>
-					<input
-						ref={input}
-						id="q"
-						name="q"
-						type="search"
-						placeholder="Find a court or a time"
-						autoComplete="off"
-						enterKeyHint="search"
-					/>
-					<kbd aria-hidden="true">/</kbd>
-					<p className="search__msg" aria-live="polite">
-						{message}
-					</p>
-				</form>
-				<a className="link nav__book" href="#book">
-					Book
-				</a>
+				<search className="search">
+					<form onSubmit={search}>
+						<label className="visually-hidden" htmlFor="q">
+							Find a court or a time
+						</label>
+						<input
+							ref={input}
+							id="q"
+							name="q"
+							type="search"
+							placeholder="Find a court or a time"
+							autoComplete="off"
+							enterKeyHint="search"
+						/>
+						<kbd>/</kbd>
+						<p className="search__msg" aria-live="polite">
+							{message}
+						</p>
+					</form>
+				</search>
+				{signedIn ? (
+					<Link className="link nav__book" to="/bookings">
+						Your bookings
+					</Link>
+				) : (
+					<Link className="link nav__book" to="/login">
+						Sign in
+					</Link>
+				)}
 			</div>
 		</header>
 	);
@@ -74,7 +82,11 @@ export function CourtPhoto() {
 	return (
 		<div className="bleed-wrap">
 			<div className="container bleed-grid">
-				<figure className="bleed" data-slot="court-photo" data-alt="Your own courts in play, square crop, daylight">
+				<figure
+					className="bleed"
+					data-slot="court-photo"
+					data-alt="Your own courts in play, square crop, daylight"
+				>
 					<img
 						src="/images/clay-court.jpg"
 						width={1920}
@@ -91,7 +103,15 @@ export function CourtPhoto() {
 }
 
 /** Court markings, drawn per court; geometry of the sample site plan (viewBox 1312 x 560). */
-const PLAN: Record<string, { rect: [number, number, number, number]; marks: string; label: [number, number]; circle?: [number, number, number] }> = {};
+const PLAN: Record<
+	string,
+	{
+		rect: [number, number, number, number];
+		marks: string;
+		label: [number, number];
+		circle?: [number, number, number];
+	}
+> = {};
 COURTS.forEach((c, i) => {
 	if (c.sport === "tennis") {
 		const x = i * 174;
@@ -104,8 +124,14 @@ COURTS.forEach((c, i) => {
 	}
 });
 const [padelA, padelB, pitch] = COURTS.filter((c) => c.sport !== "tennis");
-if (padelA) PLAN[padelA.id] = { rect: [894, 40, 190, 96], marks: "M989 52v72M914 88h150", label: [910, 166] };
-if (padelB) PLAN[padelB.id] = { rect: [1104, 40, 190, 96], marks: "M1199 52v72M1124 88h150", label: [1120, 166] };
+if (padelA)
+	PLAN[padelA.id] = { rect: [894, 40, 190, 96], marks: "M989 52v72M914 88h150", label: [910, 166] };
+if (padelB)
+	PLAN[padelB.id] = {
+		rect: [1104, 40, 190, 96],
+		marks: "M1199 52v72M1124 88h150",
+		label: [1120, 166],
+	};
 if (pitch)
 	PLAN[pitch.id] = {
 		rect: [894, 196, 400, 164],
@@ -124,17 +150,16 @@ export function SitePlan() {
 					<h2 id="plan-title">Clay courts, padel cages, one pitch.</h2>
 					<p className="lead">Click a court to book it for the hour you picked.</p>
 				</div>
-				<div className="plan__map" tabIndex={0} role="region" aria-label="Site plan, scrolls sideways on small screens">
-					<svg className="plan__svg" viewBox="0 0 1312 560" role="group" aria-label="Site plan of Eastfield Courts">
-						<g className="plan__zone" aria-hidden="true">
-							<rect x="0" y="0" width="1312" height="560" />
-						</g>
+				<div className="plan__map">
+					<svg className="plan__svg" viewBox="0 0 1312 560">
+						<title>Site plan of Eastfield Courts: each court is a link that picks it</title>
 						{COURTS.map((c) => {
 							const g = PLAN[c.id];
 							if (!g) return null;
 							const taken = isTaken(c.id);
 							const cls = taken ? "is-taken" : court?.id === c.id ? "is-pick" : undefined;
 							return (
+								// biome-ignore lint/a11y/useValidAnchor: a real link to the booker (#book) that also picks the court on the way
 								<a
 									key={c.id}
 									href="#book"
@@ -144,16 +169,24 @@ export function SitePlan() {
 										if (!pick(c.id)) e.preventDefault();
 									}}
 								>
-									<rect className="c" x={g.rect[0]} y={g.rect[1]} width={g.rect[2]} height={g.rect[3]} />
+									<rect
+										className="c"
+										x={g.rect[0]}
+										y={g.rect[1]}
+										width={g.rect[2]}
+										height={g.rect[3]}
+									/>
 									<path className="m" d={g.marks} />
-									{g.circle && <circle className="m" cx={g.circle[0]} cy={g.circle[1]} r={g.circle[2]} />}
+									{g.circle && (
+										<circle className="m" cx={g.circle[0]} cy={g.circle[1]} r={g.circle[2]} />
+									)}
 									<text x={g.label[0]} y={g.label[1]}>
 										{c.name}
 									</text>
 								</a>
 							);
 						})}
-						<g className="plan__fixed" aria-hidden="true">
+						<g className="plan__fixed">
 							<rect x="0" y="450" width="500" height="110" />
 							<text x="24" y="514">
 								Clubhouse and desk
@@ -314,7 +347,7 @@ export function Coaching() {
 							<tr key={day}>
 								<th scope="row">{day}</th>
 								{sessions.map((s, i) => (
-									<td key={`${day}-${i}`}>{s}</td>
+									<td key={`${day} ${["17:00", "18:00", "19:00"][i]}`}>{s}</td>
 								))}
 							</tr>
 						))}
@@ -356,6 +389,7 @@ export function Visit() {
 						<ul className="next">
 							{freeToday.map(({ hour, court }: { hour: Hour; court: (typeof COURTS)[number] }) => (
 								<li key={hour}>
+									{/* biome-ignore lint/a11y/useValidAnchor: a real link to the booker (#book) that also sets day, hour and court */}
 									<a
 										className="next__slot"
 										href="#book"
@@ -368,7 +402,11 @@ export function Visit() {
 						</ul>
 					</div>
 				</div>
-				<figure className="visit__photo" data-slot="pitch-photo" data-alt="The way in or the pitch at dusk, portrait">
+				<figure
+					className="visit__photo"
+					data-slot="pitch-photo"
+					data-alt="The way in or the pitch at dusk, portrait"
+				>
 					<img
 						src="/images/goal.jpg"
 						width={1920}
@@ -390,7 +428,9 @@ export function BookingBar() {
 	useEffect(() => {
 		const hero = document.querySelector(".hero");
 		if (!hero) return;
-		const io = new IntersectionObserver(([e]) => setHidden(Boolean(e?.isIntersecting)), { threshold: 0 });
+		const io = new IntersectionObserver(([e]) => setHidden(Boolean(e?.isIntersecting)), {
+			threshold: 0,
+		});
 		io.observe(hero);
 		return () => io.disconnect();
 	}, []);
@@ -436,11 +476,17 @@ export function Footer() {
 				</p>
 				<p className="foot__credits" data-credits>
 					Photographs:{" "}
-					<a className="link" href="https://commons.wikimedia.org/wiki/File:Rich%C3%A8l_Hogenkamp_-_Masters_de_Madrid_2015_-_11.jpg">
+					<a
+						className="link"
+						href="https://commons.wikimedia.org/wiki/File:Rich%C3%A8l_Hogenkamp_-_Masters_de_Madrid_2015_-_11.jpg"
+					>
 						Carlos Delgado
 					</a>{" "}
 					(CC BY-SA 4.0),{" "}
-					<a className="link" href="https://commons.wikimedia.org/wiki/File:Goal_on_the_move_(5772132849).jpg">
+					<a
+						className="link"
+						href="https://commons.wikimedia.org/wiki/File:Goal_on_the_move_(5772132849).jpg"
+					>
 						Håkan Dahlström
 					</a>{" "}
 					(CC BY 2.0), Wikimedia Commons.

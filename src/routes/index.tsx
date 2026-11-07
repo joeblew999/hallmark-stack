@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { Booker } from "#/components/site/booker";
 import { BookingProvider } from "#/components/site/booking";
 import {
@@ -12,16 +11,8 @@ import {
 	SitePlan,
 	Visit,
 } from "#/components/site/sections";
-import { bookableDays } from "#/lib/courts";
-import { sampleTaken } from "#/lib/sample";
-
-/** The venue's time zone: it decides what "today" is. */
-const VENUE_TIME_ZONE = "Asia/Bangkok";
-
-const loadAvailability = createServerFn({ method: "GET" }).handler(async () => {
-	const days = bookableDays(new Date(), VENUE_TIME_ZONE);
-	return { days, taken: sampleTaken(days) };
-});
+import { bookCourt, loadAvailability } from "#/lib/bookings";
+import { courtById, type Hour } from "#/lib/courts";
 
 export const Route = createFileRoute("/")({
 	loader: () => loadAvailability(),
@@ -29,13 +20,39 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-	const { days, taken } = Route.useLoaderData();
+	const { days, taken, user } = Route.useLoaderData();
+	const router = useRouter();
+	const navigate = useNavigate();
+
+	async function book(courtId: string, date: string, hour: Hour): Promise<string> {
+		const court = courtById(courtId);
+		const day = days.find((d) => d.date === date);
+		try {
+			const result = await bookCourt({ data: { courtId, date, hour } });
+			if (result.ok) {
+				await router.invalidate();
+				return `Booked: ${court?.short}, ${day?.label ?? date} at ${hour}. It’s under Your bookings.`;
+			}
+			if (result.reason === "signed-out") {
+				await navigate({ to: "/login" });
+				return "Sign in to book.";
+			}
+			if (result.reason === "taken") {
+				await router.invalidate();
+				return `Someone took ${court?.short} at ${hour} a moment ago. Pick another court.`;
+			}
+			return "That time can’t be booked. Pick another.";
+		} catch {
+			return "The booking didn’t reach the server. Nothing was booked; try again in a minute.";
+		}
+	}
+
 	return (
 		<BookingProvider days={days} taken={taken}>
 			<a className="skip" href="#main">
 				Skip to content
 			</a>
-			<SiteNav />
+			<SiteNav signedIn={user !== null} />
 			<main id="main">
 				<section className="hero" aria-labelledby="hero-title">
 					<div className="container hero__grid">
@@ -54,7 +71,7 @@ function Home() {
 								</a>
 							</div>
 						</div>
-						<Booker onBook={async () => "Nothing was booked: online booking is not connected yet."} />
+						<Booker onBook={book} />
 					</div>
 				</section>
 				<CourtPhoto />

@@ -5,5 +5,15 @@
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": { "enabled": true },
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	// Once a day, bookings older than a month are deleted.
+	"triggers": { "crons": ["17 3 * * *"] },
+	// Accounts and sessions (Better Auth). Provisioned on first deploy.
+	"d1_databases": [
+		{ "binding": "DB", "database_name": "hallmark-stack", "migrations_dir": "migrations" }
+	],
+	// One Durable Object per venue holds its bookings; see src/server/venue-do.ts.
+	"durable_objects": { "bindings": [{ "name": "VENUE", "class_name": "VenueDO" }] },
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["VenueDO"] }],
+	"secrets": { "required": ["BETTER_AUTH_SECRET"] }
 }
