@@ -1,5 +1,5 @@
-// Removing things from Cloudflare, for app-undeploy.mjs and id-undeploy.mjs: each delete is simply tried, and Cloudflare
-// says whether the thing was there.
+// Shared by the deploy and undeploy scripts: remove() takes a thing off Cloudflare (each delete is simply tried, and
+// Cloudflare says whether the thing was there); waitUntilUp() proves a deploy by asking its real address.
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
@@ -23,4 +23,28 @@ export function remove(what, args, { wrangler, cwd = "." }) {
 	}
 	console.error(said);
 	throw new Error(`Couldn't remove ${what}.`);
+}
+
+/**
+ * A deploy Cloudflare accepted can still not work (a missing secret, a bad migration, a certificate not issued yet), so
+ * each deploy asks its real address: every 5 seconds for up to two minutes, until `check(response, body)` passes.
+ * Anything else stops the deploy.
+ */
+export async function waitUntilUp(what, url, check = (response) => response.ok) {
+	const until = Date.now() + 120_000;
+	let last = "no answer";
+	while (Date.now() < until) {
+		try {
+			const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+			if (check(response, await response.text())) {
+				console.log(`${what} is up: ${url}`);
+				return;
+			}
+			last = `HTTP ${response.status}`;
+		} catch (error) {
+			last = error.cause?.code ?? error.message;
+		}
+		await new Promise((done) => setTimeout(done, 5_000));
+	}
+	throw new Error(`${what} isn't up after two minutes (${url}: ${last}).`);
 }

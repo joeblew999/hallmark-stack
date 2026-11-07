@@ -21,6 +21,9 @@ aube = "2.9.0"
 [env]
 # The packages' own binaries (wrangler, vite, biome, playwright) by name.
 _.path = ["{{config_root}}/node_modules/.bin"]
+# Node's own fetch (the deploy tasks' up-checks) through HTTPS_PROXY where one is set, as in a Claude cloud session;
+# with none set, as on a Mac, it changes nothing.
+NODE_USE_ENV_PROXY = "1"
 
 [tasks."cloudflare:login"]
 description = "Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who"
@@ -31,15 +34,19 @@ description = "End this repo's Cloudflare login (wrangler logout: the token is r
 run = "node scripts/cloudflare-logout.mjs"
 
 [tasks."id:deploy"]
-description = "Gateweave ID (pinned v0.10.4) onto Cloudflare at id.ubuntusoftware.net, by ID's own deploy script; its OIDC_PAIRWISE_SECRET (which turns its sign-in provider on) made once, kept by Cloudflare, never printed or reset (scripts/id-deploy.mjs)"
+description = "Gateweave ID (pinned v0.10.4) onto Cloudflare at https://id.ubuntusoftware.net, by ID's own deploy script; its OIDC_PAIRWISE_SECRET (which turns its sign-in provider on) made once, kept by Cloudflare, never printed or reset; waits until its provider answers, then id:claim (scripts/id-deploy.mjs)"
 run = "node scripts/id-deploy.mjs"
 
+[tasks."id:claim"]
+description = "Who owns Gateweave ID: a new server prints its address and waits up to 10 minutes for you to use Create account there in the browser (the first account owns it); the owner must be your Cloudflare login's email, or it stops (scripts/id-claim.mjs)"
+run = "node scripts/id-claim.mjs"
+
 [tasks."app:deploy"]
-description = "This app onto Cloudflare at courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed (scripts/app-deploy.mjs)"
+description = "This app onto Cloudflare at https://courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed; waits until the site answers (scripts/app-deploy.mjs)"
 run = "node scripts/app-deploy.mjs"
 
 [tasks."app:register"]
-description = "This app registers itself with Gateweave ID; its client id and secret go straight into its Worker secrets, never printed; already registered, it does nothing (scripts/app-register.mjs)"
+description = "This app registers itself with Gateweave ID; its client id and secret go straight into its Worker secrets, never printed; waits until its login page shows the Gateweave ID button; already registered, it does nothing (scripts/app-register.mjs)"
 run = "node scripts/app-register.mjs"
 
 [tasks."all:deploy"]

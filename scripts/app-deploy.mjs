@@ -7,6 +7,7 @@
 //      The first deploy: `wrangler deploy` creates the D1 database and the Worker, with a BETTER_AUTH_SECRET made here
 //      and passed in a file deleted straight after (Wrangler takes a new Worker's secrets only as a file); then the
 //      migrations.
+//   4. Waits until the site answers 200 on its real address.
 //
 // Secrets follow the README's Secrets section.
 import { execFileSync, spawnSync } from "node:child_process";
@@ -15,6 +16,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { APP_DATABASE, APP_DOMAIN, APP_WORKER } from "./app-config.mjs";
+import { waitUntilUp } from "./cloudflare.mjs";
 
 const run = (cmd, args) => execFileSync(cmd, args, { stdio: "inherit" });
 const wrangler = (args) => run("wrangler", args);
@@ -50,4 +52,5 @@ if (workerExists) {
 	}
 }
 if (!databaseExists) migrate();
+await waitUntilUp(APP_WORKER, `https://${APP_DOMAIN}`);
 console.log(`\n${APP_WORKER} is on https://${APP_DOMAIN}.\n`);

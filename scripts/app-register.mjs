@@ -1,13 +1,15 @@
 // mise run app:register: this app registers itself with Gateweave ID as a first-party client, and its client id and
 // secret go straight into this app's Worker secrets (with OIDC_ISSUER), never printed. Already registered (the app's
 // Worker has OIDC_CLIENT_ID), it does nothing, so the client secret isn't replaced on every run. Needs ID deployed
-// (id:deploy) and this app's Worker deployed (app:deploy).
+// (id:deploy) and this app's Worker deployed (app:deploy). Then it waits until the login page shows the "Continue with
+// Gateweave ID" button, which is there only once the app has its settings.
 //
 // Secrets follow the README's Secrets section.
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { APP_DOMAIN, APP_ID, APP_NAME } from "./app-config.mjs";
+import { waitUntilUp } from "./cloudflare.mjs";
 import { fetchId, ID_DOMAIN, ID_WEB, idWrangler } from "./id-release.mjs";
 
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
@@ -67,6 +69,11 @@ execFileSync("wrangler", ["secret", "bulk"], {
 	}),
 	stdio: ["pipe", "inherit", "inherit"],
 });
+await waitUntilUp(
+	"The Gateweave ID button",
+	`https://${APP_DOMAIN}/login`,
+	(response, body) => response.ok && body.includes("Gateweave ID"),
+);
 console.log(
 	`${APP_NAME} is registered with https://${ID_DOMAIN}; its settings are this Worker's secrets.`,
 );
