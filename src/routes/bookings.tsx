@@ -51,9 +51,12 @@ function Bookings() {
 						{user && (
 							<p className="mine__account">
 								{user.account && (
-									<a className="link" href={user.account}>
-										Your Gateweave ID account, to sign out everywhere
-									</a>
+									<span>
+										To sign out everywhere:{" "}
+										<a className="link" href={user.account}>
+											Your Gateweave ID account
+										</a>
+									</span>
 								)}
 								<SignOutButton className="link link--button" />
 							</p>
