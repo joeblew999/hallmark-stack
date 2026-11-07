@@ -56,7 +56,12 @@ export function createAuth(config: AuthConfig) {
 			// which signs everyone out.
 			...(config.secureCookies && { defaultCookieAttributes: { secure: true } }),
 			// Opaque ids, never readable ones.
-			database: { generateId: () => crypto.randomUUID() },
+			database: {
+				generateId: () => crypto.randomUUID(),
+				// From Track v0.30.3 (gateweavehq/track#231): each query is a trip to the D1's one primary, so a session
+				// and its person are read in one, with nothing read any staler.
+				joins: true,
+			},
 		},
 		session: {
 			additionalFields: {
