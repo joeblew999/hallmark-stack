@@ -30,12 +30,12 @@ export function remove(what, args, { wrangler, cwd = "." }) {
  * each deploy asks its real address: every 5 seconds for up to two minutes, until `check(response, body)` passes.
  * Anything else stops the deploy.
  */
-export async function waitUntilUp(what, url, check = (response) => response.ok) {
+export async function waitUntilUp(what, url, check = (response) => response.ok, init = {}) {
 	const until = Date.now() + 120_000;
 	let last = "no answer";
 	while (Date.now() < until) {
 		try {
-			const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+			const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) });
 			if (check(response, await response.text())) {
 				console.log(`${what} is up: ${url}`);
 				return;

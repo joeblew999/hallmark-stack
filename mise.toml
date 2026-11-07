@@ -11,6 +11,8 @@
 [settings]
 # Any npm: tool mise installs goes through aube too.
 npm.package_manager = "aube"
+# One task at a time, in the order `depends` lists them: the deploys log in, and id:deploy waits for a person.
+jobs = 1
 
 [tools]
 # The one JavaScript runtime (Track pins Node 24 in its .node-version).
@@ -46,12 +48,13 @@ description = "This app onto Cloudflare at https://courts.ubuntusoftware.net: bu
 run = "node scripts/app-deploy.mjs"
 
 [tasks."app:register"]
-description = "This app registers itself with Gateweave ID; its client id and secret go straight into its Worker secrets, never printed; waits until its login page shows the Gateweave ID button; already registered, it does nothing (scripts/app-register.mjs)"
+description = "This app registers itself with Gateweave ID, after id:deploy and app:deploy; its client id and secret go straight into its Worker secrets, never printed; registered only if ID has its client and it has the settings, otherwise it registers again; then proves sign-in reaches ID's login page (scripts/app-register.mjs)"
+depends = ["id:deploy", "app:deploy"]
 run = "node scripts/app-register.mjs"
 
 [tasks."all:deploy"]
-description = "Everything onto Cloudflare, in order: id:deploy, app:deploy, app:register"
-run = ["mise run id:deploy", "mise run app:deploy", "mise run app:register"]
+description = "Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy"
+depends = ["app:register"]
 
 [tasks."app:undeploy"]
 description = "This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"

@@ -40,7 +40,8 @@ if (found.users === 0) {
 	);
 	const until = Date.now() + 10 * 60_000;
 	while (found.users === 0) {
-		if (Date.now() > until) throw new Error("Nobody created an account at Gateweave ID within 10 minutes.");
+		if (Date.now() > until)
+			throw new Error("Nobody created an account at Gateweave ID within 10 minutes.");
 		await new Promise((done) => setTimeout(done, 5_000));
 		found = owner();
 	}
