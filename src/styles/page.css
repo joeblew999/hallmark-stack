@@ -939,6 +939,10 @@ html:not(.js) .panel[hidden] {
 .mine__empty {
 	grid-column: 6 / 13;
 }
+/* The table is the box its hidden heading is placed in, so nothing in it reaches past it (issue #4). */
+.mine__table {
+	position: relative;
+}
 .mine__empty {
 	display: grid;
 	gap: var(--space-lg);
@@ -968,5 +972,43 @@ html:not(.js) .panel[hidden] {
 	.mine__table,
 	.mine__empty {
 		grid-column: 1 / -1;
+	}
+}
+/* On a phone each booking is a block of its own: day, time and court on the left, Cancel on the right (issue #4). */
+@media (max-width: 40rem) {
+	.mine__table {
+		overflow-x: visible;
+	}
+	.mine__table thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+	.mine__table tbody,
+	.mine__table tr {
+		display: block;
+	}
+	.mine__table tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		column-gap: var(--space-lg);
+		padding-block: var(--space-md);
+		border-bottom: var(--rule-hair) solid var(--color-rule);
+	}
+	.mine__table th,
+	.mine__table td {
+		grid-column: 1;
+		padding: 0;
+		border-bottom: 0;
+	}
+	.mine__table tbody th {
+		white-space: normal;
+	}
+	.mine__table td:last-child {
+		grid-column: 2;
+		grid-row: 1 / span 3;
+		align-self: center;
 	}
 }

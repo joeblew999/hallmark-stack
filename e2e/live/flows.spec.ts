@@ -116,9 +116,6 @@ test("a double booking is refused, and a cancel frees the court", async () => {
 });
 
 test("the signed-in pages pass Hallmark's lint, as deployed", async () => {
-	// Known: Your bookings scrolls sideways at 320px, and the ID account link wraps (issue #4). Playwright reports this as
-	// an expected failure until then, and fails it once it passes, so this line goes with the fix.
-	test.fail(true, "issue #4: Your bookings at 320px");
 	// Over HTTP, as e2e/hallmark.spec.ts does: given a file, the lint would also read the saved built CSS as source.
 	const types: Record<string, string> = {
 		html: "text/html",
