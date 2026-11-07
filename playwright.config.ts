@@ -6,6 +6,8 @@ const PORT = Number(process.env.E2E_PORT) || 4711;
 
 export default defineConfig({
 	testDir: "e2e",
+	// e2e/live/ is the live suite (playwright.live.config.ts, mise run all:e2e), never CI's.
+	testIgnore: "live/**",
 	fullyParallel: true,
 	forbidOnly: Boolean(process.env.CI),
 	retries: 0,

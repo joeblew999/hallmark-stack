@@ -12,6 +12,8 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"resolveJsonModule": true,
+		// e2e/live/ reuses the deploy scripts' helpers (scripts/*.mjs); read for their types, not checked.
+		"allowJs": true,
 		"skipLibCheck": true,
 		"noEmit": true,
 		"types": ["vite/client"],

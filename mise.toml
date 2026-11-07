@@ -58,8 +58,8 @@ depends = ["app:register"]
 run = "mise run all:e2e"
 
 [tasks."all:e2e"]
-description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, courts' Sign out signs one out of courts, signing out at ID ends the other's courts session; Hallmark's lint on the signed-in pages; then they are deleted (scripts/all-e2e.mjs)"
-run = "node scripts/all-e2e.mjs"
+description = "The live courts site through the live Gateweave ID, in Chrome, no human (Playwright, playwright.live.config.ts, e2e/live/): two throwaway people invited into ID sign in, courts keeps none of ID's tokens, a double booking is refused, a cancel frees it, Hallmark's lint passes on the signed-in pages, courts takes the name from ID again at the next sign-in, courts' Sign out leaves ID signed in, signing out at ID ends courts' session; read-only checks that both answer and are paired; then the people are deleted"
+run = "aube exec playwright test --config playwright.live.config.ts"
 
 [tasks."app:undeploy"]
 description = "This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"

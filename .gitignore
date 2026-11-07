@@ -5,6 +5,8 @@ coverage
 .wrangler
 .tanstack
 playwright-report
+# The live suite's two throwaway people for one run (mise run all:e2e)
+e2e/live/.state
 test-results
 *.tsbuildinfo
 worker-configuration.d.ts
