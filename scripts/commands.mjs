@@ -2,6 +2,7 @@
 // this app, such as Cloudflare and Gateweave ID) and the app's scripts, each with what it is for. The
 // README links to it and CLAUDE.md imports it, so the commands are listed in one place that can't drift.
 // `--check` fails if the file is out of date (aube run ci does that first).
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
@@ -10,14 +11,22 @@ const rows = Object.entries(pkg.scripts).map(([name, run]) => {
 	if (!why) throw new Error(`package.json scriptsInfo has no line for "${name}"`);
 	return `| \`aube run ${name}\` | ${why} | \`${run.replaceAll("|", "\\|")}\` |`;
 });
-// mise tasks, from the root mise.toml: each [tasks."name"] with its description.
-const tasks = [
-	...readFileSync("mise.toml", "utf8").matchAll(
-		/^\[tasks\."([^"]+)"\]\s*\ndescription = "((?:[^"\\]|\\.)*)"/gm,
-	),
-].map(
-	([, name, description]) =>
-		`| \`mise run ${name}\` | ${description.replaceAll('\\"', '"').replaceAll("|", "\\|")} |`,
+// mise tasks, as mise itself reads the root mise.toml (`mise tasks ls --json`), in the order the file lists them: each
+// with its arguments (its usage spec's args, such as <env>) and its description.
+const listed = new Map(
+	JSON.parse(execFileSync("mise", ["tasks", "ls", "--json"], { encoding: "utf8" })).map((task) => [
+		task.name,
+		task,
+	]),
+);
+const tasks = [...readFileSync("mise.toml", "utf8").matchAll(/^\[tasks\."([^"]+)"\]/gm)].map(
+	([, name]) => {
+		const { description, usage } = listed.get(name);
+		const args = [...(usage ?? "").matchAll(/\barg "([^"]+)"/g)]
+			.map(([, arg]) => ` ${arg}`)
+			.join("");
+		return `| \`mise run ${name}${args}\` | ${description.replaceAll("|", "\\|")} |`;
+	},
 );
 const doc = `# Commands
 

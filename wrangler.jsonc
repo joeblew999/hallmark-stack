@@ -1,19 +1,20 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "hallmark-stack",
+	// Cloudflare's environments (issue #9): the top level is development, for aube run dev, the tests and CI, and is
+	// never deployed. staging and production are deployed with CLOUDFLARE_ENV, as Workers named courts-<env>.
+	// Wrangler doesn't inherit bindings, vars or secrets into an environment, so each one names its own; aube run
+	// config:check fails if one is missing.
+	"name": "courts",
 	"main": "src/server.ts",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
-	"observability": { "enabled": true },
+	// Request logs, and traces with a span for every D1 query and binding call (issue #5).
+	"observability": { "enabled": true, "traces": { "enabled": true } },
 	"upload_source_maps": true,
-	// The address, a Workers Custom Domain (issue #2): Gateweave ID reaches it there, never on workers.dev.
-	"routes": [{ "pattern": "courts.ubuntusoftware.net", "custom_domain": true }],
 	// Once a day, bookings older than a month are deleted.
 	"triggers": { "crons": ["17 3 * * *"] },
-	// Who has signed in through Gateweave ID, and their sessions (Better Auth). Provisioned on first deploy.
-	"d1_databases": [
-		{ "binding": "DB", "database_name": "hallmark-stack", "migrations_dir": "migrations" }
-	],
+	// Who has signed in through Gateweave ID, and their sessions (Better Auth). Local only here.
+	"d1_databases": [{ "binding": "DB", "database_name": "courts", "migrations_dir": "migrations" }],
 	// One Durable Object per venue holds its bookings (src/server/venue-do.ts). RateLimiter counts sign-in requests
 	// across every isolate (src/server/rate-limit/, from Track).
 	"durable_objects": {
@@ -26,5 +27,44 @@
 		"VenueDO": { "type": "durable-object", "storage": "sqlite" },
 		"RateLimiter": { "type": "durable-object", "storage": "sqlite" }
 	},
-	"secrets": { "required": ["BETTER_AUTH_SECRET"] }
+	// Where a venue's Durable Object starts (src/server/venue.ts), next to its people: the venues are in Thailand,
+	// and D1 is made there too (issue #5).
+	"vars": { "LOCATION": "apac" },
+	"placement": { "region": "aws:ap-northeast-1" },
+	"secrets": { "required": ["BETTER_AUTH_SECRET"] },
+	"env": {
+		"staging": {
+			// A Workers Custom Domain: Gateweave ID reaches it there, never on workers.dev (issue #2).
+			"routes": [{ "pattern": "courts-staging.ubuntusoftware.net", "custom_domain": true }],
+			"triggers": { "crons": ["17 3 * * *"] },
+			"d1_databases": [
+				{ "binding": "DB", "database_name": "courts-staging", "migrations_dir": "migrations" }
+			],
+			"durable_objects": {
+				"bindings": [
+					{ "name": "VENUE", "class_name": "VenueDO" },
+					{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }
+				]
+			},
+			"vars": { "LOCATION": "apac" },
+			"placement": { "region": "aws:ap-northeast-1" },
+			"secrets": { "required": ["BETTER_AUTH_SECRET"] }
+		},
+		"production": {
+			"routes": [{ "pattern": "courts.ubuntusoftware.net", "custom_domain": true }],
+			"triggers": { "crons": ["17 3 * * *"] },
+			"d1_databases": [
+				{ "binding": "DB", "database_name": "courts-production", "migrations_dir": "migrations" }
+			],
+			"durable_objects": {
+				"bindings": [
+					{ "name": "VENUE", "class_name": "VenueDO" },
+					{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }
+				]
+			},
+			"vars": { "LOCATION": "apac" },
+			"placement": { "region": "aws:ap-northeast-1" },
+			"secrets": { "required": ["BETTER_AUTH_SECRET"] }
+		}
+	}
 }

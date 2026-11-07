@@ -1,18 +1,20 @@
-// Gateweave ID (github.com/gateweavehq/id): its pinned release, its address, the fetch of that release into the
-// git-ignored vendor/gateweave-id, and its own Wrangler. ID only; used by the id-* and app-* scripts that reach ID.
+// Gateweave ID (github.com/gateweavehq/id): its pinned release, the fetch of that release into the git-ignored
+// vendor/gateweave-id with our environments written into its wrangler.jsonc, and its own Wrangler. Used by the id-*
+// and app-* scripts that reach ID, and the live suite.
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import {
+	experimental_patchConfig,
+	experimental_readRawConfig,
+	unstable_readConfig,
+} from "wrangler";
+import { ENVIRONMENTS } from "./environments.mjs";
 
 /** ID's release, from github.com/gateweavehq/id/releases, the newest on 2026-11-07, when it was checked. */
 export const ID_RELEASE = "v0.10.6";
 /** The commit that tag named then. A tag can be moved; the commit can't, so it is checked on every fetch. */
 export const ID_COMMIT = "793ce73c1ce8d33d829db30d9c56bd97d8a536c2";
-/** Where ID answers: a Workers Custom Domain on ubuntusoftware.net (issue #2). */
-export const ID_DOMAIN = "id.ubuntusoftware.net";
-/** ID's Turnstile widget, by name, so id:deploy finds it again and id:undeploy deletes it. */
-export const ID_TURNSTILE_WIDGET = "gateweave-id";
-
 export const ID_ROOT = "vendor/gateweave-id";
 export const ID_WEB = join(ID_ROOT, "apps/web");
 
@@ -55,6 +57,65 @@ export function fetchId() {
 		);
 	}
 	execFileSync("aube", ["install", "--frozen-lockfile"], { cwd: ID_ROOT, stdio: "inherit" });
+	writeEnvironments();
+}
+
+const ID_CONFIG = join(ID_ROOT, "wrangler.jsonc");
+
+/**
+ * Our environments, written into ID's wrangler.jsonc as fetched: our values from id.jsonc (name, domain, vars), and
+ * ID's own bindings from its top level (D1, Durable Objects, email, cron, queue, secrets) with Wrangler's names for an
+ * environment, so a new ID release brings its own bindings. Gateweave's own environments (cloud, staging) are removed,
+ * so only ours can be deployed. Done on every fetch, so every script that reaches ID finds them.
+ */
+function writeEnvironments() {
+	execFileSync("git", ["checkout", "--", "wrangler.jsonc"], { cwd: ID_ROOT });
+	const theirs = experimental_readRawConfig({ config: ID_CONFIG }).rawConfig;
+	const ours = experimental_readRawConfig({ config: "id.jsonc" }).rawConfig;
+	const named = (theirName, env) => `${theirName.replace(theirs.name, ours.name)}-${env}`;
+	const env = {};
+	for (const name of Object.keys(theirs.env ?? {})) env[name] = undefined;
+	experimental_patchConfig(ID_CONFIG, { name: ours.name, env }, false);
+	const blocks = {};
+	for (const each of ENVIRONMENTS) {
+		blocks[each] = {
+			placement: ours.env[each].placement,
+			observability: ours.env[each].observability,
+			routes: ours.env[each].routes,
+			vars: ours.env[each].vars,
+			d1_databases: theirs.d1_databases.map(({ database_id, ...d1 }) => ({
+				...d1,
+				database_name: named(d1.database_name, each),
+			})),
+			durable_objects: theirs.durable_objects,
+			send_email: theirs.send_email,
+			triggers: theirs.triggers,
+			queues: {
+				producers: theirs.queues.producers.map((q) => ({ ...q, queue: named(q.queue, each) })),
+				consumers: theirs.queues.consumers.map((q) => ({ ...q, queue: named(q.queue, each) })),
+			},
+			secrets: theirs.secrets,
+		};
+	}
+	experimental_patchConfig(ID_CONFIG, { env: blocks }, false);
+}
+
+/** One more var for ID's `env` (the Turnstile site key, issued at deploy), written into ID's wrangler.jsonc. */
+export function setIdVar(env, name, value) {
+	experimental_patchConfig(ID_CONFIG, { env: { [env]: { vars: { [name]: value } } } }, false);
+}
+
+/** ID's Worker, D1, logouts queue and Custom Domain for `env`, as Wrangler resolves them from ID's wrangler.jsonc. */
+export function idConfig(env) {
+	const config = unstable_readConfig({ config: ID_CONFIG, env });
+	const domain = config.routes?.find(
+		(route) => typeof route === "object" && route.custom_domain,
+	)?.pattern;
+	const database = config.d1_databases.find(({ binding }) => binding === "DB")?.database_name;
+	const queue = config.queues?.producers?.[0]?.queue;
+	if (!domain || !database || !queue)
+		throw new Error(`ID's env.${env} has no Custom Domain, D1 or queue`);
+	return { worker: config.name, database, queue, domain };
 }
 
 /** ID's own pinned Wrangler (its script), for scripts/cloudflare.mjs's remove(). */

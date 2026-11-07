@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { createServer, type Server } from "node:http";
 import { dirname, extname, join, normalize } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { COURTS, ID, inCourts, open, people, signedIn, stateOf } from "./target";
+import { COURTS, ID, inCourts, open, people, signedIn, signIn, stateOf } from "./target";
 
 test.describe.configure({ mode: "serial" });
 
@@ -62,7 +62,10 @@ async function savePage(page: Page, name: string) {
 		if (fetched.has(path)) return;
 		fetched.add(path);
 		const answer = await page.context().request.get(`${COURTS}${path}`);
-		expect(answer.ok(), `fetching ${path} for Hallmark's lint`).toBe(true);
+		expect(
+			answer.ok(),
+			`fetching ${path} for Hallmark's lint: ${answer.status()} ${answer.statusText()}`,
+		).toBe(true);
 		const file = join(SAVED, path);
 		mkdirSync(dirname(file), { recursive: true });
 		const body = await answer.body();
@@ -186,7 +189,7 @@ test("courts takes the name from Gateweave ID again at the next sign-in", async 
 
 	await open(a, "/");
 	await a.locator(".nav").getByRole("button", { name: "Sign out" }).click();
-	await a.locator(".nav").getByRole("button", { name: "Sign in" }).click();
+	await signIn(a);
 	await expect(a.getByRole("link", { name: "Your bookings" })).toBeVisible();
 	await open(a, "/bookings");
 	await expect(a.locator(".mine__head")).toContainText(`Signed in as ${renamed}`);

@@ -9,7 +9,7 @@ passes Hallmark's design gates, means locking Hallmark onto the stack so every l
 the stack of [Gateweave's repositories](https://github.com/orgs/gateweavehq/repositories), taken from
 [gateweavehq/track](https://github.com/gateweavehq/track), and designed with Hallmark, with Hallmark
 locked to that stack: its tokens in Tailwind, its locked-system file (`DESIGN.md`) saying pages are TanStack routes,
-its skill pinned in the repo, and its lint run on every page: signed out on the rendered build in CI, signed in on the live site in `mise run all:e2e`. Tools are pinned with mise; packages are
+its skill pinned in the repo, and its lint run on every page: signed out on the rendered build in CI, signed in on the live staging site in `mise run all:e2e staging`. Tools are pinned with mise; packages are
 installed with aube.
 
 ## Tech stack
@@ -107,43 +107,67 @@ Gateweave copies these between its own products, "owned here now, the way shadcn
 password reset (ID's), account linking, GitHub, workspaces, agents and MCP, the demo,
 deleting an account (ID's), sync sockets.
 
-The real ID is tested end to end by `mise run all:e2e`.
+The real ID is tested end to end by `mise run all:e2e staging`.
 
 ID is pinned at release `v0.10.6`, commit `793ce73`, checked 2026-11-07 (v0.10.5 closed a password check a stolen session cookie could use), in `scripts/id-release.mjs`: `ID_RELEASE` is the tag and `ID_COMMIT` the commit it named, which every ID task checks (`fetchId`), and ID's packages come from ID's own lockfile. Deploying it, and
 registering this app with it, are mise tasks: see Deploying, below.
 
-Both run on Custom Domains on `ubuntusoftware.net` (this app on https://courts.ubuntusoftware.net, `wrangler.jsonc`):
-two Workers on `workers.dev` can't reach each other at all. Issues #2 and #3 have the plans and their decisions.
+Both run on Custom Domains on `ubuntusoftware.net`: two Workers on `workers.dev` can't reach each other at all. Issues
+#2 and #3 have the plans and their decisions.
 
 ## Deploying
 
-Where things are deployed (Workers Custom Domains on `ubuntusoftware.net`, Cloudflare account `gedw99@gmail.com`;
-also at the top of `mise.toml`):
+Two environments, Wrangler's way (issue #9): `staging` and `production`, each a block under `env` in `wrangler.jsonc`
+(courts) and `id.jsonc` (Gateweave ID). The top level of each file is development, which is never deployed. Each
+environment has its own Workers, D1s, queue, Turnstile widget, Email Sending name and secrets; nothing is shared, so
+staging can be torn down and rebuilt without touching production. Cloudflare account `gedw99@gmail.com`:
 
-- **This app:** https://courts.ubuntusoftware.net (the route in `wrangler.jsonc`)
-- **Gateweave ID:** https://id.ubuntusoftware.net (`ID_DOMAIN` in `scripts/id-release.mjs`)
+| Environment | Courts                                    | Gateweave ID                          | Workers and D1s                      |
+| ----------- | ----------------------------------------- | ------------------------------------- | ------------------------------------ |
+| staging     | https://courts-staging.ubuntusoftware.net | https://id-staging.ubuntusoftware.net | `courts-staging`, `id-staging`       |
+| production  | https://courts.ubuntusoftware.net         | https://id.ubuntusoftware.net         | `courts-production`, `id-production` |
 
-Everything that goes onto Cloudflare, or comes off it, is a mise task (the root `mise.toml`, the control plane), named
-noun first:
+Everything that goes onto Cloudflare, or comes off it, is a mise task in the root `mise.toml` (the control plane),
+named noun first, and every one of them names its environment: `mise run all:deploy staging`. None has a default, so
+production is only ever deployed by asking for it. Each task is in [docs/commands.md](docs/commands.md). The usual run:
 
-| Task                         | Does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mise run cloudflare:login`  | Wrangler's device-code login: one click on the link it prints. Already logged in, it says as whom.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `mise run cloudflare:logout` | Ends it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `mise run id:deploy`         | Gateweave ID onto Cloudflare at https://id.ubuntusoftware.net (`scripts/id-deploy.mjs`): its pinned release fetched into the git-ignored `vendor/gateweave-id/` and installed with aube, deployed by ID's own deploy script, as the "Deploy to Cloudflare" button would. Set up for the internet (ID's `docs/self-hosting.md`): email from its own name, `id.ubuntusoftware.net` (Cloudflare Email Sending), so `ubuntusoftware.net`'s own mail records are never touched, for sign-up codes and password resets; ID's Turnstile, with a widget `gateweave-id`; the breached-password check. Then `id:claim`, then sign-up opened, so anyone can make an account.                                               |
-| `mise run id:claim`          | Who owns ID. A new ID server's first account owns it. On a new server this prints https://id.ubuntusoftware.net and waits for you to use Create account there in the browser, as `cloudflare:login` does: your password manager makes and keeps the password, and ID emails you a code to type in. The owner must be your Cloudflare login's email, or it stops.                                                                                                                                                                                                                                                                                                                                                |
-| `mise run app:deploy`        | This app onto Cloudflare at https://courts.ubuntusoftware.net (`scripts/app-deploy.mjs`): build, then D1 migrations before the new code (after it on the first deploy, which creates the D1).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `mise run app:register`      | This app registers itself with ID (`scripts/app-register.mjs`), after `id:deploy` and `app:deploy` (its `depends` in `mise.toml`, so the order is mise's, whichever task is run). Registered means ID has its client and the app has the settings; either missing, as after ID is rebuilt on its own, it registers again.                                                                                                                                                                                                                                                                                                                                                                                       |
-| `mise run all:deploy`        | All three: it is `app:register`, with its `depends`; then `all:e2e`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `mise run all:e2e`           | The live courts site through the live ID, in Chrome, no human: Playwright with its own config (`playwright.live.config.ts`, `e2e/live/`). Two throwaway people invited into ID (an invitation row, accepted with a password that exists only in that run) sign in; courts keeps none of ID's tokens; a double booking is refused and a cancel frees it; Hallmark's lint passes on the signed-in pages as deployed; courts takes the name from ID again at the next sign-in; courts' "Sign out" leaves ID signed in, and signing out at ID ends courts' session (back-channel logout). Read-only checks that both answer and are paired. Then the people are deleted from both, also anything a killed run left. |
-| `mise run app:undeploy`      | This app off Cloudflare, every piece (`scripts/app-undeploy.mjs`): its registration with ID, its Worker (domain, Durable Object, secrets, cron) and its D1. Its accounts and bookings are gone for good.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `mise run id:undeploy`       | Gateweave ID off Cloudflare, every piece (`scripts/id-undeploy.mjs`): its Worker (domain, secrets, `OIDC_PAIRWISE_SECRET` included), its D1, its logouts queue, its Turnstile widget and Email Sending for `id.ubuntusoftware.net`, which takes five of its six DNS records with it; the sixth, `TXT _dmarc.id.ubuntusoftware.net`, Cloudflare leaves, and Wrangler can't edit DNS, so the task says to delete it. Every account is gone, and every app that signs in through it gets new ids for everyone when ID is deployed again.                                                                                                                                                                           |
-| `mise run all:undeploy`      | Both, the app first.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+```sh
+mise run all:deploy staging     # ID, then courts, then courts registered with ID, then all:e2e staging
+mise run all:deploy production  # the same; its all:e2e only reads
+mise run all:undeploy staging   # courts, then ID, every piece; their accounts and bookings gone for good
+```
 
-Each one logs in first if it needs to, and each deploy ends by asking its real address until it answers right
-(`waitUntilUp` in `scripts/cloudflare.mjs`): ID's discovery document with its own issuer, this site's home page, and
-sign-in reaching ID's login page for this app's client. Undeploying and deploying again from nothing is how to know the deploy really
-works; each undeploy step that finds its piece already gone says so and carries on.
+`scripts/environments.mjs` holds the two names, and `scripts/app-config.mjs` and `scripts/id-release.mjs` read each
+environment's names and address back from the config as Wrangler does, so nothing is written twice.
+`aube run config:check` (in CI) fails if an environment is missing or incomplete.
+
+- **Where the data lives (issue #5):** both D1s are made in Asia-Pacific (`--location apac`, `LOCATION` in
+  `scripts/environments.mjs`) before their first deploy, and the bookings Durable Object is asked for with
+  `locationHint` `apac` (`LOCATION` in the config's vars, `src/server/venue.ts`). Both only count when the thing is first
+  made: moving one means making it again. Both Workers run next to their D1s whoever calls them (`placement.region`, `PLACEMENT`
+  in `scripts/environments.mjs`: Tokyo, measured nearest APAC D1); left to run next to the caller, a sign-in from the US
+  paid 210 ms for each of its D1 queries. Tracing is on (`observability.traces`), so each D1 and binding call is timed.
+- **ID** is its pinned release, fetched into the git-ignored `vendor/gateweave-id/`, with our two environments written
+  into its `wrangler.jsonc` from `id.jsonc`, and deployed by ID's own deploy script, as Gateweave deploy theirs. It is
+  set up for the internet (ID's `docs/self-hosting.md`): email from its own name (Cloudflare Email Sending), so
+  `ubuntusoftware.net`'s own mail records are never touched; its own Turnstile widget, named after its Worker; the
+  breached-password check.
+- **Claiming ID:** a new ID server's first account owns it. On a new server `id:claim` prints its address and waits for
+  you to use Create account there; ID emails you a code. The owner must be your Cloudflare login's email, or it stops.
+  Each environment's ID is claimed once.
+- **The live suite** (`all:e2e`, `playwright.live.config.ts`, `e2e/live/`) has one Playwright project per environment.
+  Staging runs everything: two throwaway people invited into ID (an invitation row, accepted with a password that
+  exists only in that run) sign in, book and sign out, and are deleted afterwards, with anything a killed run left.
+  Production runs only the read-only checks that both answer and are paired: nobody is made and nothing is booked on
+  the site real people use.
+- **Undeploying ID** takes five of Email Sending's six DNS records with it; the sixth,
+  `TXT _dmarc.id[-staging].ubuntusoftware.net`, Cloudflare leaves, and Wrangler can't edit DNS, so the task says to
+  delete it. Every app that signs in through that ID gets new ids for everyone when it is deployed again.
+
+Each task logs in first if it needs to, and each deploy ends by asking its real address until it answers right
+(`waitUntilUp` in `scripts/cloudflare.mjs`): ID's discovery document with its own issuer, courts' `/api/auth/ok`, and
+sign-in reaching ID's login page for courts' client. Each undeploy step that finds its piece already gone says so and
+carries on.
 
 ## Secrets
 

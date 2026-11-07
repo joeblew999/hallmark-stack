@@ -1,4 +1,6 @@
-// mise run id:undeploy: Gateweave ID off Cloudflare, every piece of it, so id:deploy can be proved from nothing.
+// mise run id:undeploy <env>: that environment's Gateweave ID (id-<env>) off Cloudflare, every piece of it, so
+// id:deploy can be proved from nothing. Every name comes from that environment's block and every command runs with its
+// CLOUDFLARE_ENV, so undeploying staging can't touch production.
 //
 //   1. The Cloudflare login (scripts/cloudflare-login.mjs).
 //   2. Its Worker taken off its logouts queue as the consumer (Cloudflare won't delete a queue's consumer).
@@ -7,33 +9,22 @@
 //   4. Its logouts queue.
 //   5. Its D1 database (every account, workspace and registered app).
 //   6. Its Turnstile widget.
-//   7. Email Sending for its own name, id.ubuntusoftware.net (ubuntusoftware.net's own mail is not touched).
+//   7. Email Sending for its own name, its Custom Domain (ubuntusoftware.net's own mail is not touched).
 //
 // Each is simply deleted; one already gone is reported and skipped. Everything in ID is gone for good, and every app
 // that signs in through it gets new ids for everyone when ID is deployed again.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { remove } from "./cloudflare.mjs";
-import {
-	fetchId,
-	ID_DOMAIN,
-	ID_ROOT,
-	ID_TURNSTILE_WIDGET,
-	ID_WRANGLER,
-	idWrangler,
-} from "./id-release.mjs";
+import { chooseEnvironment } from "./environments.mjs";
+import { fetchId, ID_ROOT, ID_WRANGLER, idConfig, idWrangler } from "./id-release.mjs";
 
+const env = chooseEnvironment();
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
 fetchId();
-// The names, from ID's own wrangler.jsonc (its top level, which is what id:deploy deploys).
-const config = readFileSync(join(ID_ROOT, "wrangler.jsonc"), "utf8");
-const worker = /"name":\s*"([^"]+)"/.exec(config)?.[1];
-const database = /"database_name":\s*"([^"]+)"/.exec(config)?.[1];
-const queue = /"queue":\s*"([^"]+)"/.exec(config)?.[1];
-if (!worker || !database || !queue)
-	throw new Error("ID's wrangler.jsonc has no Worker, D1 or queue name");
+// The names, for this environment, as Wrangler resolves them. The Turnstile widget is named after the Worker.
+const { worker, database, queue, domain: ID_DOMAIN } = idConfig(env);
+const ID_TURNSTILE_WIDGET = worker;
 
 const id = { wrangler: ID_WRANGLER, cwd: ID_ROOT };
 remove(

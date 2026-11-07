@@ -1,16 +1,19 @@
-// mise run id:deploy: Gateweave ID onto Cloudflare, on its own Worker at id.ubuntusoftware.net, set up as a server open
-// to the internet (ID's docs/self-hosting.md). ID only; the app registers itself with ID in app:register.
+// mise run id:deploy <env>: that environment's Gateweave ID onto Cloudflare as id-<env>, at its Custom Domain in
+// id.jsonc, set up as a server open to the internet (ID's docs/self-hosting.md). ID only; the app registers itself
+// with ID in app:register.
 //
-//   1. The Cloudflare login (scripts/cloudflare-login.mjs: already logged in, it says as whom).
-//   2. ID's pinned release, installed with aube (scripts/id-release.mjs).
-//   3. Email: Cloudflare Email Sending on for ID's own name, id.ubuntusoftware.net, so ubuntusoftware.net's own mail
-//      records are never touched. ID then sends sign-up codes, password resets and invitations from EMAIL_FROM.
-//   4. Turnstile: ID's own, switched on with a widget for ID's address (found by name, or made). Its site key is a
-//      setting; its secret key, made by Cloudflare with the widget, goes straight into ID's Worker secrets.
-//   5. ID's wrangler.jsonc, as fetched, given its Custom Domain and its settings: BETTER_AUTH_URL (its issuer),
-//      EMAIL_FROM, TURNSTILE_SITE_KEY and CHECK_BREACHED_PASSWORDS. Rewritten from the fetched file on every run.
-//   6. ID's own deploy script, as the "Deploy to Cloudflare" button would: it builds, creates ID's D1 if missing,
-//      applies its migrations and, on the first deploy, sets its BETTER_AUTH_SECRET.
+//   1. The environment (CLOUDFLARE_ENV for every command after) and the Cloudflare login.
+//   2. ID's pinned release, installed with aube, with our environments written into its wrangler.jsonc
+//      (scripts/id-release.mjs).
+//   3. Email: Cloudflare Email Sending on for this ID's own name, so ubuntusoftware.net's own mail records are never
+//      touched. ID then sends sign-up codes, password resets and invitations from EMAIL_FROM.
+//   4. Turnstile: ID's own, with a widget for this ID's address, named after its Worker (found by name, or made). Its
+//      site key goes into this environment's vars; its secret key, made by Cloudflare with the widget, straight into
+//      ID's Worker secrets.
+//   5. Its D1, if it isn't there yet, made in LOCATION (Asia-Pacific, issue #5): ID's deploy script uses a D1 that is
+//      already there, and left to `wrangler deploy` it is made next to whoever deploys.
+//   6. ID's own deploy script, as Gateweave deploy their own environments, with CLOUDFLARE_ENV: it builds, applies
+//      its migrations and, on the first deploy, sets its BETTER_AUTH_SECRET.
 //   7. ID's secrets: OIDC_PAIRWISE_SECRET (turns its sign-in provider on) and TURNSTILE_SECRET_KEY, each set once.
 //   8. Waits until ID's discovery document answers with its own address as the issuer (provider on, domain live).
 //   9. id:claim (scripts/id-claim.mjs): a new server waits for its first account, which owns it; it must be yours.
@@ -19,23 +22,16 @@
 // Secrets follow the README's Secrets section.
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { waitUntilUp } from "./cloudflare.mjs";
-import {
-	fetchId,
-	ID_DOMAIN,
-	ID_ROOT,
-	ID_TURNSTILE_WIDGET,
-	ID_WEB,
-	idWrangler,
-} from "./id-release.mjs";
+import { chooseEnvironment, LOCATION } from "./environments.mjs";
+import { fetchId, ID_ROOT, ID_WEB, idConfig, idWrangler, setIdVar } from "./id-release.mjs";
 
-/** Who ID's email comes from: a sender on ID's own Email Sending name. */
-const EMAIL_FROM = `Gateweave ID <noreply@${ID_DOMAIN}>`;
-
+const env = chooseEnvironment();
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 fetchId();
+const { worker, database, domain: ID_DOMAIN } = idConfig(env);
+/** ID's Turnstile widget, named after its Worker, so id:deploy finds it again and id:undeploy deletes it. */
+const ID_TURNSTILE_WIDGET = worker;
 
 const quiet = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
 const secretNames = () => {
@@ -86,26 +82,20 @@ const turnstileSecret = before.includes("TURNSTILE_SECRET_KEY")
 	: (widget.secret ??
 		JSON.parse(idWrangler(["turnstile", "widget", "get", widget.sitekey, "--json"], quiet)).secret);
 
-// 5. ID's wrangler.jsonc, from the fetched file each time (git restores it), with its Custom Domain and settings.
-// The fetched copy is git-ignored here.
-execFileSync("git", ["checkout", "--", "wrangler.jsonc"], { cwd: ID_ROOT });
-const config = join(ID_ROOT, "wrangler.jsonc");
-const vars = {
-	BETTER_AUTH_URL: `https://${ID_DOMAIN}`,
-	EMAIL_FROM,
-	TURNSTILE_SITE_KEY: widget.sitekey,
-	CHECK_BREACHED_PASSWORDS: "1",
-};
-const text = readFileSync(config, "utf8");
-const patched = text.replace(
-	/("name":\s*"gateweave-id",)/,
-	`$1\n\t"routes": [{ "pattern": "${ID_DOMAIN}", "custom_domain": true }],\n\t"vars": ${JSON.stringify(vars)},`,
-);
-if (patched === text)
-	throw new Error(`ID's wrangler.jsonc has no "name": "gateweave-id" to put its settings after`);
-writeFileSync(config, patched);
+// The site key into this environment's vars (ID's sign-up page shows the widget with it).
+setIdVar(env, "TURNSTILE_SITE_KEY", widget.sitekey);
 
-// 6. ID's own deploy script.
+// 5. ID's D1, made in LOCATION if it isn't there yet.
+const databases = JSON.parse(idWrangler(["d1", "list", "--json"], quiet));
+if (databases.some(({ name }) => name === database)) {
+	console.log(`The D1 database ${database} is already there; left as it is.`);
+} else {
+	idWrangler(["d1", "create", database, "--location", LOCATION, "--update-config=false"], {
+		stdio: "inherit",
+	});
+}
+
+// 6. ID's own deploy script, with this environment's CLOUDFLARE_ENV (inherited).
 execFileSync("node", ["scripts/deploy.mjs"], { cwd: ID_WEB, stdio: "inherit" });
 
 // 7. ID's secrets, each set once. OIDC_PAIRWISE_SECRET: ID's OpenID Connect provider stays off until it is set (ID's
@@ -140,7 +130,7 @@ await waitUntilUp(
 );
 
 // 9. The owner.
-execFileSync("node", ["scripts/id-claim.mjs"], { stdio: "inherit" });
+execFileSync("node", ["scripts/id-claim.mjs", env], { stdio: "inherit" });
 
 // 10. Sign-up open. ID's own switch for it is the owner's account page, behind the owner's sign-in, so it is set in
 // ID's D1 here, as that switch does (ID's src/server/auth/deployment.ts, setDeploymentSignUp).

@@ -4,9 +4,14 @@
 # and the tasks for what sits outside the app: Cloudflare, Gateweave ID, deploying. The app's own commands are
 # package.json scripts. All of them are in docs/commands.md.
 #
-# Where things are deployed (Workers Custom Domains on ubuntusoftware.net, Cloudflare account gedw99@gmail.com):
-#   https://courts.ubuntusoftware.net   this app        (app:deploy; its address is the route in wrangler.jsonc)
-#   https://id.ubuntusoftware.net       Gateweave ID    (id:deploy; its address is ID_DOMAIN in scripts/id-release.mjs)
+# Two environments, Wrangler's way: staging and production, named on every deploy task (`mise run all:deploy staging`);
+# no task has a default, so production is only ever deployed by asking for it. Development is wrangler.jsonc's top
+# level and is never deployed. Where each is (Workers Custom Domains on ubuntusoftware.net, Cloudflare account
+# gedw99@gmail.com; each address is a route in wrangler.jsonc or id.jsonc):
+#   staging      https://courts-staging.ubuntusoftware.net   this app       Worker courts-staging, D1 courts-staging
+#                https://id-staging.ubuntusoftware.net       Gateweave ID   Worker id-staging, D1 id-staging
+#   production   https://courts.ubuntusoftware.net           this app       Worker courts-production, D1 courts-production
+#                https://id.ubuntusoftware.net               Gateweave ID   Worker id-production, D1 id-production
 
 [settings]
 # Any npm: tool mise installs goes through aube too.
@@ -36,39 +41,49 @@ description = "End this repo's Cloudflare login (wrangler logout: the token is r
 run = "node scripts/cloudflare-logout.mjs"
 
 [tasks."id:deploy"]
-description = "Gateweave ID (pinned v0.10.6) onto Cloudflare at https://id.ubuntusoftware.net, by ID's own deploy script, set up for the internet: email from its own name id.ubuntusoftware.net (Email Sending), its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
-run = "node scripts/id-deploy.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's Gateweave ID (pinned v0.10.6) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
+run = "node scripts/id-deploy.mjs {{usage.env}}"
 
 [tasks."id:claim"]
-description = "Who owns Gateweave ID: a new server prints its address and waits up to 10 minutes for you to use Create account there in the browser, with the code ID emails you (the first account owns it); the owner must be your Cloudflare login's email, or it stops (scripts/id-claim.mjs)"
-run = "node scripts/id-claim.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "Who owns one environment's Gateweave ID: a new server prints its address and waits up to 10 minutes for you to use Create account there in the browser, with the code ID emails you (the first account owns it); the owner must be your Cloudflare login's email, or it stops (scripts/id-claim.mjs)"
+run = "node scripts/id-claim.mjs {{usage.env}}"
 
 [tasks."app:deploy"]
-description = "This app onto Cloudflare at https://courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed; waits until the site answers (scripts/app-deploy.mjs)"
-run = "node scripts/app-deploy.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's courts onto Cloudflare as courts-<env>, at its route in wrangler.jsonc: its D1 made in Asia-Pacific on the first deploy, build, D1 migrations before new code, BETTER_AUTH_SECRET made once and never printed; waits until the site answers (scripts/app-deploy.mjs)"
+run = "node scripts/app-deploy.mjs {{usage.env}}"
 
 [tasks."app:register"]
-description = "This app registers itself with Gateweave ID, after id:deploy and app:deploy; its client id and secret go straight into its Worker secrets, never printed; registered only if ID has its client and it has the settings, otherwise it registers again; then proves sign-in reaches ID's login page (scripts/app-register.mjs)"
-depends = ["id:deploy", "app:deploy"]
-run = "node scripts/app-register.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's courts registers itself with that environment's Gateweave ID, after id:deploy and app:deploy; its client id and secret go straight into its Worker secrets, never printed; registered only if ID has its client and it has the settings, otherwise it registers again; then proves sign-in reaches ID's login page (scripts/app-register.mjs)"
+depends = ["id:deploy {{usage.env}}", "app:deploy {{usage.env}}"]
+run = "node scripts/app-register.mjs {{usage.env}}"
 
 [tasks."all:deploy"]
-description = "Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy; then all:e2e proves it"
-depends = ["app:register"]
-run = "mise run all:e2e"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy; then all:e2e proves it"
+depends = ["app:register {{usage.env}}"]
+run = "mise run all:e2e {{usage.env}}"
 
 [tasks."all:e2e"]
-description = "The live courts site through the live Gateweave ID, in Chrome, no human (Playwright, playwright.live.config.ts, e2e/live/): two throwaway people invited into ID sign in, courts keeps none of ID's tokens, a double booking is refused, a cancel frees it, Hallmark's lint passes on the signed-in pages, courts takes the name from ID again at the next sign-in, courts' Sign out leaves ID signed in, signing out at ID ends courts' session; read-only checks that both answer and are paired; then the people are deleted"
-run = "aube exec playwright test --config playwright.live.config.ts"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's live courts site through its live Gateweave ID, in Chrome, no human (Playwright, playwright.live.config.ts, e2e/live/): two throwaway people invited into ID sign in, courts keeps none of ID's tokens, a double booking is refused, a cancel frees it, Hallmark's lint passes on the signed-in pages, courts takes the name from ID again at the next sign-in, courts' Sign out leaves ID signed in, signing out at ID ends courts' session; read-only checks that both answer and are paired; then the people are deleted. Staging runs it all; production only the read-only checks: nobody made, nothing booked"
+run = "aube exec playwright test --config playwright.live.config.ts --project {{usage.env}}"
 
 [tasks."app:undeploy"]
-description = "This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"
-run = "node scripts/app-undeploy.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's courts off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"
+run = "node scripts/app-undeploy.mjs {{usage.env}}"
 
 [tasks."id:undeploy"]
-description = "Gateweave ID off Cloudflare, every piece: its Worker (domain, secrets, OIDC_PAIRWISE_SECRET included), its D1, its logouts queue, its Turnstile widget and Email Sending for id.ubuntusoftware.net; every account gone, and every app's ids change when it comes back (scripts/id-undeploy.mjs)"
-run = "node scripts/id-undeploy.mjs"
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment's Gateweave ID off Cloudflare, every piece: its Worker (domain, secrets, OIDC_PAIRWISE_SECRET included), its D1, its logouts queue, its Turnstile widget and Email Sending for its name; every account gone, and every app's ids change when it comes back (scripts/id-undeploy.mjs)"
+run = "node scripts/id-undeploy.mjs {{usage.env}}"
 
 [tasks."all:undeploy"]
-description = "Everything off Cloudflare, in order: app:undeploy, id:undeploy"
-run = ["mise run app:undeploy", "mise run id:undeploy"]
+usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+description = "One environment off Cloudflare, in order: app:undeploy, id:undeploy"
+depends = ["app:undeploy {{usage.env}}"]
+run = "mise run id:undeploy {{usage.env}}"

@@ -1,6 +1,7 @@
-// mise run app:register: this app registers itself with Gateweave ID as a first-party client, and its client id and
-// secret go straight into this app's Worker secrets (with OIDC_ISSUER), never printed. mise runs id:deploy and
-// app:deploy first (its `depends`).
+// mise run app:register <env>: courts-<env> registers itself with that environment's Gateweave ID (id-<env>) as a
+// first-party client, and its client id and secret go straight into courts-<env>'s secrets (with OIDC_ISSUER), never
+// printed. Staging courts signs in through staging ID only, production through production ID only. mise runs
+// id:deploy and app:deploy for the same environment first (its `depends`).
 //
 // Registered means both halves are there: ID has this app's client (its D1) and this app has the settings (its
 // Worker's OIDC_CLIENT_ID). Then it is left as it is, so the client secret isn't replaced on every run. Either half
@@ -13,13 +14,17 @@
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { APP_DOMAIN, APP_ID, APP_NAME } from "./app-config.mjs";
+import { APP_ID, APP_NAME, appConfig } from "./app-config.mjs";
 import { waitUntilUp } from "./cloudflare.mjs";
-import { fetchId, ID_DOMAIN, ID_WEB, idWrangler } from "./id-release.mjs";
+import { chooseEnvironment } from "./environments.mjs";
+import { fetchId, ID_WEB, idConfig, idWrangler } from "./id-release.mjs";
 
+const env = chooseEnvironment();
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
 fetchId();
+const APP_DOMAIN = appConfig(env).domain;
+const ID_DOMAIN = idConfig(env).domain;
 const appSecrets = JSON.parse(
 	execFileSync("wrangler", ["secret", "list", "--format", "json"], { encoding: "utf8" }),
 );
