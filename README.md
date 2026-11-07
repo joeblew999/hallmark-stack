@@ -95,13 +95,13 @@ own pages. Courts has no passwords, no sign-up and no login form.
 Gateweave copies these between its own products, "owned here now, the way shadcn/ui components are", ID's
 `AGENTS.md`). Each file says at the top what it came from at `b8b5ba0`, and what changed:
 
-| Here                                                                | From Track's `apps/web/`                                       | What it does                                                                                         |
-| ------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                              | Sign-in through ID; back-channel logout; which ID session each session came from                     |
-| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                        | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting |
-| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                           | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too   |
-| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                    | Limits that hold across every isolate, in a Durable Object                                           |
-| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts` | The button that waits for the script; refusals in words of ours                                      |
+| Here                                                                | From Track's `apps/web/`                                       | What it does                                                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                              | Sign-in through ID; back-channel logout; which ID session each session came from                       |
+| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                        | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting   |
+| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                           | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too     |
+| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                    | Limits that hold across every isolate, in one Durable Object for every client, not one per client (#5) |
+| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts` | The button that waits for the script; refusals in words of ours                                        |
 
 **Not copied, because they exist for Track's own accounts or its other parts:** passwords, email verification and
 password reset (ID's), account linking, GitHub, workspaces, agents and MCP, the demo,
