@@ -50,7 +50,7 @@ export function inCourts(sql: string): Record<string, unknown>[] {
 		[APP_WRANGLER, "d1", "execute", "DB", "--remote", "--json", "--command", sql],
 		{ encoding: "utf8" },
 	);
-	if (run.status !== 0) throw new Error(`courts' D1 refused: ${run.stderr}`);
+	if (run.status !== 0) throw new Error(`courts' D1 refused: ${run.stdout}${run.stderr}`);
 	return JSON.parse(run.stdout)[0].results;
 }
 
