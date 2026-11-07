@@ -110,8 +110,16 @@ await waitUntilUp(
 await waitUntilUp(
 	"Gateweave ID's login page for this app",
 	authorize,
-	(response) => {
-		const to = new URL(response.headers.get("location") ?? "", authorize);
+	// To a browser ID answers with a redirect; to a script like this, with the same address as JSON
+	// ({"redirect":true,"url":…}). Either one must be ID's own login page.
+	(response, body) => {
+		let where = response.headers.get("location");
+		if (!where) {
+			try {
+				where = JSON.parse(body).url;
+			} catch {}
+		}
+		const to = new URL(where ?? "", authorize);
 		return to.hostname === ID_DOMAIN && to.pathname === "/login";
 	},
 	{ redirect: "manual" },
