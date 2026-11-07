@@ -41,5 +41,5 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `aube run db:generate` | Drizzle: write a migration into migrations/ from the schema | `drizzle-kit generate` |
 | `aube run db:migrate:local` | Apply migrations to the local D1 | `wrangler d1 migrations apply DB --local` |
 | `aube run dev:setup` | One-time: write .dev.vars with a random BETTER_AUTH_SECRET and migrate the local D1 | `node scripts/dev-setup.mjs` |
-| `aube run ci` | Everything CI runs, in order: check, typecheck, test, build, test:e2e (Hallmark's lint included). GitHub runs exactly this | `aube run commands --check && aube run check && aube run typecheck && aube run test && aube run build && aube run test:e2e` |
+| `aube run ci` | Everything CI runs, in order: check, typecheck, test, dev:setup (the build carries .dev.vars to the built Worker), build, test:e2e (Hallmark's lint included). GitHub runs exactly this | `aube run commands --check && aube run check && aube run typecheck && aube run test && aube run dev:setup && aube run build && aube run test:e2e` |
 | `aube run commands` | Regenerate docs/commands.md from these scripts (--check fails if it is out of date) | `node scripts/commands.mjs` |

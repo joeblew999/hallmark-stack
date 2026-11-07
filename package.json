@@ -21,7 +21,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"dev:setup": "node scripts/dev-setup.mjs",
-		"ci": "aube run commands --check && aube run check && aube run typecheck && aube run test && aube run build && aube run test:e2e",
+		"ci": "aube run commands --check && aube run check && aube run typecheck && aube run test && aube run dev:setup && aube run build && aube run test:e2e",
 		"commands": "node scripts/commands.mjs"
 	},
 	"dependencies": {
@@ -78,7 +78,7 @@
 		"db:generate": "Drizzle: write a migration into migrations/ from the schema",
 		"db:migrate:local": "Apply migrations to the local D1",
 		"dev:setup": "One-time: write .dev.vars with a random BETTER_AUTH_SECRET and migrate the local D1",
-		"ci": "Everything CI runs, in order: check, typecheck, test, build, test:e2e (Hallmark's lint included). GitHub runs exactly this",
+		"ci": "Everything CI runs, in order: check, typecheck, test, dev:setup (the build carries .dev.vars to the built Worker), build, test:e2e (Hallmark's lint included). GitHub runs exactly this",
 		"commands": "Regenerate docs/commands.md from these scripts (--check fails if it is out of date)"
 	}
 }
