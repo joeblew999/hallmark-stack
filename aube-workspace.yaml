@@ -1,0 +1,7 @@
+# aube's project settings (mise.toml pins aube). A dependency's build script runs only when allowed here, so an
+# unreviewed one fails the install (and CI) instead of being skipped. Track allows the same three.
+strictDepBuilds: true
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true

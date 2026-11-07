@@ -1,0 +1,18 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+# Every tool this repo needs, pinned. `mise install` gets them; nothing is installed globally.
+# The commands themselves are package.json scripts (see docs/commands.md).
+
+[settings]
+# Any npm: tool mise installs goes through aube too.
+npm.package_manager = "aube"
+
+[tools]
+# The one JavaScript runtime (Track pins Node 24 in its .node-version).
+node = "24.22.2"
+# Installs the Node packages from package.json and pnpm-lock.yaml. No npm, no pnpm.
+aube = "2.9.0"
+
+[env]
+# The packages' own binaries (wrangler, vite, biome, playwright) by name.
+_.path = ["{{config_root}}/node_modules/.bin"]

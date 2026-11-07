@@ -1,3 +1,4 @@
+/* Hallmark's base rules, written by `theme.mjs scaffold grid`; imported into the base layer (src/styles.css). */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }
 html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-top: var(--space-3xl); }
