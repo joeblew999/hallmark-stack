@@ -16,7 +16,8 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `mise run id:claim` | Who owns Gateweave ID: a new server prints its address and waits up to 10 minutes for you to use Create account there in the browser, with the code ID emails you (the first account owns it); the owner must be your Cloudflare login's email, or it stops (scripts/id-claim.mjs) |
 | `mise run app:deploy` | This app onto Cloudflare at https://courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed; waits until the site answers (scripts/app-deploy.mjs) |
 | `mise run app:register` | This app registers itself with Gateweave ID, after id:deploy and app:deploy; its client id and secret go straight into its Worker secrets, never printed; registered only if ID has its client and it has the settings, otherwise it registers again; then proves sign-in reaches ID's login page (scripts/app-register.mjs) |
-| `mise run all:deploy` | Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy |
+| `mise run all:deploy` | Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy; then all:e2e proves it |
+| `mise run all:e2e` | The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, sign out ends both courts and ID; then they are deleted (scripts/all-e2e.mjs) |
 | `mise run app:undeploy` | This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs) |
 | `mise run id:undeploy` | Gateweave ID off Cloudflare, every piece: its Worker (domain, secrets, OIDC_PAIRWISE_SECRET included), its D1, its logouts queue, its Turnstile widget and Email Sending for id.ubuntusoftware.net; every account gone, and every app's ids change when it comes back (scripts/id-undeploy.mjs) |
 | `mise run all:undeploy` | Everything off Cloudflare, in order: app:undeploy, id:undeploy |
@@ -30,11 +31,11 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `aube run preview` | Serve the production build on http://localhost:4711 | `vite preview --port 4711 --strictPort` |
 | `aube run snapshot` | Save the built home page as static files in dist/snapshot/, for the artifact viewer | `node scripts/snapshot.mjs` |
 | `aube run typegen` | Regenerate the Worker's types (worker-configuration.d.ts) and the route tree | `wrangler types && tsr generate` |
-| `aube run typecheck` | Type-check the app and the tests (regenerates types first) | `wrangler types && tsr generate && tsc && tsc -p test` |
+| `aube run typecheck` | Type-check the app and the tests (regenerates types first) | `wrangler types && tsr generate && tsc && tsc -p test && tsc -p test/app` |
 | `aube run check` | Biome lint and format check | `biome check` |
 | `aube run format` | Biome: fix formatting and safe lint fixes | `biome check --write` |
-| `aube run test` | Vitest: unit tests in Node, and the Durable Object in workerd | `vitest run` |
-| `aube run test:e2e` | Playwright on the production build in installed Chrome: sign up, book, double booking refused, cancel | `playwright test` |
+| `aube run test` | Vitest: unit tests in Node, the Durable Object in workerd, and the built app's sign-in through Gateweave ID in workerd against a stand-in provider (test/app/, from Track) | `vitest run` |
+| `aube run test:e2e` | Playwright on the production build in installed Chrome, with nobody signed in: the booker, the sign-in button, no passwords. Signed in, through the real Gateweave ID, is mise run all:e2e | `playwright test` |
 | `aube run hallmark` | Hallmark's sloplint on the rendered production build at eight widths; fails on anything but clean | `node scripts/dev-setup.mjs && node scripts/hallmark.mjs` |
 | `aube run auth:schema` | Regenerate the Better Auth tables (src/server/db/auth-schema.ts) from src/server/auth/config.ts | `aube dlx auth@1.7.16 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes` |
 | `aube run db:generate` | Drizzle: write a migration into migrations/ from the schema | `drizzle-kit generate` |

@@ -1,12 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { oidcProviderName, userOf } from "#/server/auth";
+import { idAccountUrl, oidcProviderName, userOf } from "#/server/auth";
 import { days, venue } from "#/server/venue";
 import type { Booking, BookResult } from "#/server/venue-do";
 
 // Durable Object RPC results are typed `T & Disposable`; each is given its plain type here, where it leaves the
 // server, so TanStack Start serialises plain data.
+
+/** Who is signed in, for the header: their name, and where their Gateweave ID account is. */
+function signedIn(user: { name: string; email: string } | null) {
+	return user ? { name: user.name, email: user.email, account: idAccountUrl } : null;
+}
 
 /** The bookable days and which courts are taken at each hour, plus who is signed in. */
 export const loadAvailability = createServerFn({ method: "GET" }).handler(async () => {
@@ -16,7 +21,7 @@ export const loadAvailability = createServerFn({ method: "GET" }).handler(async 
 		userOf(getRequest()),
 	]);
 	const plain: Record<string, string[]> = { ...taken };
-	return { days: ds, taken: plain, user: user ? { name: user.name, email: user.email } : null };
+	return { days: ds, taken: plain, user: signedIn(user) };
 });
 
 export type BookOutcome = BookResult | { ok: false; reason: "signed-out" };
@@ -41,7 +46,7 @@ export const myBookings = createServerFn({ method: "GET" }).handler(async () => 
 	const today = days()[0]?.date ?? "";
 	const rows = await venue().bookingsOf(user.id, today);
 	const bookings: Booking[] = rows.map((b) => ({ ...b }));
-	return { user: { name: user.name, email: user.email }, bookings };
+	return { user: signedIn(user), bookings };
 });
 
 export const cancelBooking = createServerFn({ method: "POST" })
@@ -52,7 +57,7 @@ export const cancelBooking = createServerFn({ method: "POST" })
 		return venue().cancel(user.id, data);
 	});
 
-/** The sign-in page's options: the OpenID Connect provider's name, or null when none is set up. */
+/** The sign-in page's options: Gateweave ID's name, or null when it is not set up and nobody can sign in. */
 export const signInOptions = createServerFn({ method: "GET" }).handler(async () => ({
-	provider: oidcProviderName(),
+	provider: oidcProviderName,
 }));

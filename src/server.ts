@@ -1,8 +1,9 @@
 import { env } from "cloudflare:workers";
 import handler from "@tanstack/react-start/server-entry";
-import { getAuth } from "./server/auth";
+import { handleAuthRequest, postToAuth } from "./server/auth";
 import { days, venue } from "./server/venue";
 
+export { RateLimiter } from "./server/rate-limit";
 export { VenueDO } from "./server/venue-do";
 
 /** Without the database or the secret nothing can work; say so rather than sign with Better Auth's default. */
@@ -20,7 +21,10 @@ export default {
 	fetch(request) {
 		if (!env.DB || !env.BETTER_AUTH_SECRET) return notSetUp();
 		const url = new URL(request.url);
-		if (url.pathname.startsWith("/api/auth/")) return getAuth().handler(request);
+		// As Track's routes/api/auth/$.ts: a POST may be a back-channel logout, seen through after its sender stops waiting.
+		if (url.pathname.startsWith("/api/auth/")) {
+			return request.method === "POST" ? postToAuth(request) : handleAuthRequest(request);
+		}
 		return handler.fetch(request);
 	},
 	// Daily: bookings older than a month go.

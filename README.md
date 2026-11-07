@@ -29,19 +29,19 @@ same way, in one package instead of Track's four.
 
 Taken from Track at commit `b8b5ba0` (2026-11-06), checked 2026-11-07:
 
-| What             | Track                                                                                                                                 | Here                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Versions         | `apps/web/package.json`, `pnpm-workspace.yaml` catalog                                                                                | `package.json`, the same versions                                            |
-| Worker entry     | `apps/web/src/server.ts`: own routes first, then TanStack Start's handler                                                             | `src/server.ts`: `/api/auth/*` to Better Auth, then TanStack Start           |
-| Vite             | `@cloudflare/vite-plugin` (SSR environment), Tailwind, TanStack Start, React                                                          | `vite.config.ts`, the same plugins                                           |
-| Auth             | Better Auth on D1 via Drizzle; built on first use (`getAuth`), config free of `cloudflare:workers` so the CLI can generate the schema | `src/server/auth/`, the same pattern; email and password only                |
-| D1               | Identity only, migrations from drizzle-kit                                                                                            | `migrations/`, identity only                                                 |
-| Durable Objects  | One per workspace, SQLite storage, the authority for its data                                                                         | `VenueDO` (`src/server/venue-do.ts`), the authority for bookings             |
-| Server functions | `createServerFn` with `.validator(zod)`, `getRequest()` for the session                                                               | `src/lib/bookings.ts`                                                        |
-| UI               | Tailwind 4 with shadcn/ui (`components.json`, new-york, radix-ui, lucide)                                                             | the same `components.json`; shadcn's variables mapped onto Hallmark's tokens |
-| Tests            | Vitest in Node and in workerd (`@cloudflare/vitest-plugin`), Playwright on the production build                                       | the same: `src/**/*.test.ts`, `test/` (workerd), `e2e/`                      |
-| Lint and format  | Biome (tabs, width 100)                                                                                                               | `biome.json`, the same settings                                              |
-| Not set up yet   | `.dev.vars` from a script with a random `BETTER_AUTH_SECRET`; a 503 without DB or secret                                              | `scripts/dev-setup.mjs`; the same 503                                        |
+| What             | Track                                                                                                                                              | Here                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Versions         | `apps/web/package.json`, `pnpm-workspace.yaml` catalog                                                                                             | `package.json`, the same versions                                                              |
+| Worker entry     | `apps/web/src/server.ts`: own routes first, then TanStack Start's handler                                                                          | `src/server.ts`: `/api/auth/*` to Better Auth, then TanStack Start                             |
+| Vite             | `@cloudflare/vite-plugin` (SSR environment), Tailwind, TanStack Start, React                                                                       | `vite.config.ts`, the same plugins                                                             |
+| Auth             | Better Auth on D1 via Drizzle; built on first use (`getAuth`), config free of `cloudflare:workers` so the CLI can generate the schema              | `src/server/auth/`: Track's sign-in through ID, copied (see Gateweave ID, below); no passwords |
+| D1               | Identity only, migrations from drizzle-kit                                                                                                         | `migrations/`, identity only                                                                   |
+| Durable Objects  | One per workspace, SQLite storage, the authority for its data                                                                                      | `VenueDO` (`src/server/venue-do.ts`), the authority for bookings                               |
+| Server functions | `createServerFn` with `.validator(zod)`, `getRequest()` for the session                                                                            | `src/lib/bookings.ts`                                                                          |
+| UI               | Tailwind 4 with shadcn/ui (`components.json`, new-york, radix-ui, lucide)                                                                          | the same `components.json`; shadcn's variables mapped onto Hallmark's tokens                   |
+| Tests            | Vitest in Node and in workerd (`@cloudflare/vitest-plugin`), the built app in workerd (`test/track-worker.ts`), Playwright on the production build | the same: `src/**/*.test.ts`, `test/` (workerd), `test/app/` (the built app), `e2e/`           |
+| Lint and format  | Biome (tabs, width 100)                                                                                                                            | `biome.json`, the same settings                                                                |
+| Not set up yet   | `.dev.vars` from a script with a random `BETTER_AUTH_SECRET`; a 503 without DB or secret                                                           | `scripts/dev-setup.mjs`; the same 503                                                          |
 
 Left out on purpose, because a booking site doesn't need them: Track's protocol, sync-server and sync-client packages
 (realtime sync, the IndexedDB replica, WebSockets, the service worker), MCP, the GitHub app, intake email,
@@ -66,19 +66,51 @@ this stack, on this design, instead of writing standalone HTML:
    as a project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time
    lint on every CSS change, and `aube run hallmark` runs its full lint on the rendered production build, in CI too.
 
-## Gateweave ID: the sign-in
+## Gateweave ID: the only way in
 
 [gateweavehq/id](https://github.com/gateweavehq/id) is Gateweave's OpenID Connect provider: one account for all our
-apps, on its own Worker, on the same stack. It runs on Cloudflare only. This app signs in through it as Track does,
-with a "Continue with Gateweave ID" button beside the password (`src/server/auth/oidc.ts`, Better Auth's
-generic-oauth plugin), and ends someone's sessions here when they sign out there (back-channel logout). The button
-appears only when `OIDC_ISSUER`, `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` are set.
+apps, on its own Worker, on the same stack. It runs on Cloudflare only. **It is the only way into courts** (issue #3):
+making an account, signing in and out, details, password, two-factor, passkeys and deleting the account are all ID's
+own pages. Courts has no passwords, no sign-up and no login form.
+
+- **Sign in:** "Sign in" (the header, or booking while signed out) goes to ID and comes back signed in. ID's own page
+  offers making an account too, and comes back the same way. A refused sign-in comes back to `/login`, which says why
+  in words of ours (`src/lib/sign-in-refusal.ts`). The button can't be pressed before the page's script has loaded
+  (`src/components/site/live-button.tsx`): a press that early would do nothing.
+- **What courts keeps:** who someone is, keyed by ID's id for them (`sub`), so bookings know whose they are, with
+  their name and email taken from ID at every sign-in; and its own short session. If ID is down, people already signed
+  in carry on; only new sign-ins wait. ID's access and refresh tokens are never kept; its ID token is, as the
+  `id_token_hint` that signs someone out at ID without a page asking first.
+- **Sign out, everywhere:** "Sign out" ends courts' session and goes on to ID's end-session, which ends ID's session,
+  tells every app (courts too) through back-channel logout, and comes back to the home page (registered with ID by
+  `app:register`).
+- **Signing out at ID, or deleting the ID account,** ends courts' sessions through back-channel logout
+  (`/api/auth/backchannel-logout/oidc`), each by the ID session it came from (`session.oidc_sid`).
+
+**From Track, copied and owned** (Track's auth lives in its private app package, so there is nothing to depend on;
+Gateweave copies these between its own products, "owned here now, the way shadcn/ui components are", ID's
+`AGENTS.md`). Each file says at the top what it came from at `b8b5ba0`, and what changed:
+
+| Here                                                                | From Track's `apps/web/`                                                              | What it does                                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                                                     | Sign-in through ID; back-channel logout; which ID session each session came from                     |
+| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                                               | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting |
+| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                                                  | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too   |
+| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                                           | Limits that hold across every isolate, in a Durable Object                                           |
+| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts`                        | The button that waits for the script; refusals in words of ours                                      |
+| `test/app/`                                                         | `test/track-worker.ts`, `oidc-provider.ts`, `oidc-sign-in.test.ts`, `global-setup.ts` | The built app in workerd against a stand-in ID: what the real ID can't be made to do on demand       |
+
+**Not copied, because they exist for Track's own accounts or its other parts:** passwords, email verification and
+password reset (ID's), account linking, leaving ID signed in at sign-out, GitHub, workspaces, agents and MCP, the demo,
+deleting an account (ID's), sync sockets.
+
+The real ID is tested end to end by `mise run all:e2e`.
 
 ID is pinned at release `v0.10.4` (commit `bd1d4e6`, checked 2026-11-07) in `scripts/id-release.mjs`. Deploying it, and
 registering this app with it, are mise tasks: see Deploying, below.
 
 Both run on Custom Domains on `ubuntusoftware.net` (this app on https://courts.ubuntusoftware.net, `wrangler.jsonc`):
-two Workers on `workers.dev` can't reach each other at all. Issue #2 has the plan and its decisions.
+two Workers on `workers.dev` can't reach each other at all. Issues #2 and #3 have the plans and their decisions.
 
 ## Deploying
 
@@ -99,7 +131,8 @@ noun first:
 | `mise run id:claim`          | Who owns ID. A new ID server's first account owns it. On a new server this prints https://id.ubuntusoftware.net and waits for you to use Create account there in the browser, as `cloudflare:login` does: your password manager makes and keeps the password, and ID emails you a code to type in. The owner must be your Cloudflare login's email, or it stops.                                                                                                                                                                                                                                                                                                  |
 | `mise run app:deploy`        | This app onto Cloudflare at https://courts.ubuntusoftware.net (`scripts/app-deploy.mjs`): build, then D1 migrations before the new code (after it on the first deploy, which creates the D1).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `mise run app:register`      | This app registers itself with ID (`scripts/app-register.mjs`), after `id:deploy` and `app:deploy` (its `depends` in `mise.toml`, so the order is mise's, whichever task is run). Registered means ID has its client and the app has the settings; either missing, as after ID is rebuilt on its own, it registers again.                                                                                                                                                                                                                                                                                                                                         |
-| `mise run all:deploy`        | All three: it is `app:register`, with its `depends`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `mise run all:deploy`        | All three: it is `app:register`, with its `depends`; then `all:e2e`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `mise run all:e2e`           | The live courts site through the live ID, in Chrome, no human (`scripts/all-e2e.mjs`): two throwaway people invited into ID (an invitation row, accepted with a password that exists only in that run) sign in, a double booking is refused, a cancel frees it, and signing out ends both courts and ID; then they are deleted from both.                                                                                                                                                                                                                                                                                                                         |
 | `mise run app:undeploy`      | This app off Cloudflare, every piece (`scripts/app-undeploy.mjs`): its registration with ID, its Worker (domain, Durable Object, secrets, cron) and its D1. Its accounts and bookings are gone for good.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `mise run id:undeploy`       | Gateweave ID off Cloudflare, every piece (`scripts/id-undeploy.mjs`): its Worker (domain, secrets, `OIDC_PAIRWISE_SECRET` included), its D1, its logouts queue, its Turnstile widget and Email Sending for `id.ubuntusoftware.net`. Every account is gone, and every app that signs in through it gets new ids for everyone when ID is deployed again.                                                                                                                                                                                                                                                                                                            |
 | `mise run all:undeploy`      | Both, the app first.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -124,7 +157,8 @@ works; each undeploy step that finds its piece already gone says so and carries 
 
 ## How it works
 
-- **Accounts** are Better Auth's, in D1 (`src/server/auth/`, `migrations/`).
+- **Accounts** are Gateweave ID's. Courts keeps who signed in through it, and their sessions, in D1 with Better Auth
+  (`src/server/auth/`, `migrations/`); see Gateweave ID, above.
 - **Bookings** belong to one `VenueDO` per venue (`src/server/venue-do.ts`). A unique index on court, date and hour
   makes a double booking impossible: the second one is refused and the page says someone took it.
 - **The page** (`src/routes/index.tsx`, `src/components/site/`) loads the taken courts for four days with a server
@@ -152,6 +186,9 @@ GitHub's CI runs, and the same here.
 - **Sample content:** the name Eastfield Courts, the courts and their layout, the sport details and the coaching
   timetable.
 - **Opening hours and the address** are blank text slots (`data-fill` in `src/components/site/sections.tsx`).
+- **Someone who deletes their Gateweave ID account** is signed out here and can't sign in again, but courts keeps
+  its copy of their name and email (bookings go after a month). ID tells apps nothing about deleted accounts, only
+  logouts; Track's `delete-account.ts` is there if courts needs its own.
 - **The two photographs** are stand-ins from Hallmark's library, credited in the footer. Replace
   `public/images/clay-court.jpg` and `public/images/goal.jpg` with your own.
 
@@ -163,6 +200,8 @@ GitHub's CI runs, and the same here.
   `chromium-bidi` 157 or newer, which Google has published since October 2026 without npm provenance, and aube's
   trust policy refuses that. 25.12.0 is the last release built on `chromium-bidi` 17.0.2, which has it. Checked
   2026-11-07 against the npm registry.
+- **`miniflare` is held at `5.20261023.3-beta`,** the one Wrangler 4.156.0 brings, for `test/app/`. Track's tests pin
+  `5.20261023.0-beta`; one copy, the same as the deploys run, is the choice here.
 - **Biome** has two CSS rules turned off for `src/styles/` (`biome.json`). `!important` is how Hallmark's
   reduced-motion and slot rules must win. The specificity-order warnings there are between selectors that never
   match the same element.

@@ -10,12 +10,21 @@
 	"routes": [{ "pattern": "courts.ubuntusoftware.net", "custom_domain": true }],
 	// Once a day, bookings older than a month are deleted.
 	"triggers": { "crons": ["17 3 * * *"] },
-	// Accounts and sessions (Better Auth). Provisioned on first deploy.
+	// Who has signed in through Gateweave ID, and their sessions (Better Auth). Provisioned on first deploy.
 	"d1_databases": [
 		{ "binding": "DB", "database_name": "hallmark-stack", "migrations_dir": "migrations" }
 	],
-	// One Durable Object per venue holds its bookings; see src/server/venue-do.ts.
-	"durable_objects": { "bindings": [{ "name": "VENUE", "class_name": "VenueDO" }] },
-	"exports": { "VenueDO": { "type": "durable-object", "storage": "sqlite" } },
+	// One Durable Object per venue holds its bookings (src/server/venue-do.ts). RateLimiter counts sign-in requests
+	// across every isolate (src/server/rate-limit/, from Track).
+	"durable_objects": {
+		"bindings": [
+			{ "name": "VENUE", "class_name": "VenueDO" },
+			{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }
+		]
+	},
+	"exports": {
+		"VenueDO": { "type": "durable-object", "storage": "sqlite" },
+		"RateLimiter": { "type": "durable-object", "storage": "sqlite" }
+	},
 	"secrets": { "required": ["BETTER_AUTH_SECRET"] }
 }

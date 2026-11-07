@@ -160,6 +160,10 @@
 	color: var(--color-muted);
 }
 .nav__book {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-lg);
 	font-size: var(--text-md);
 	white-space: nowrap;
 }
@@ -921,59 +925,15 @@ html:not(.js) .panel[hidden] {
 	gap: var(--space-lg);
 	justify-items: start;
 }
-.auth__or {
-	color: var(--color-ink-2);
+.auth__msg {
+	min-height: 1lh;
+	color: var(--color-error);
 }
-.auth__form {
-	display: grid;
-	gap: var(--space-xl);
-}
-.field {
-	display: grid;
-	gap: var(--space-xs);
-	margin: 0;
-}
-.field label {
-	font-size: var(--text-sm);
-	font-weight: 500;
-	color: var(--color-ink-2);
-}
-.field input {
-	min-height: 52px;
-	padding: 0;
-	border: 0;
-	border-bottom: 1px solid var(--color-muted);
-	border-radius: 0;
-	background: none;
-	color: var(--color-ink);
-	font-size: var(--text-3xl);
-	font-family: var(--font-display);
-	letter-spacing: -0.02em;
-	outline: 2px solid transparent;
-	outline-offset: 2px;
-}
-.field input:hover {
-	border-bottom-color: var(--color-ink);
-}
-.field input:focus-visible {
-	outline-color: var(--color-focus);
-}
-.field input[aria-invalid="true"] {
-	border-bottom-color: var(--color-error);
-}
-.field input:disabled {
-	opacity: 0.55;
-	cursor: not-allowed;
-}
-.auth__go {
+.mine__account {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--space-lg);
-}
-.auth__msg {
-	min-height: 1lh;
-	color: var(--color-error);
 }
 .mine__table,
 .mine__empty {
@@ -1008,8 +968,5 @@ html:not(.js) .panel[hidden] {
 	.mine__table,
 	.mine__empty {
 		grid-column: 1 / -1;
-	}
-	.field input {
-		font-size: var(--text-2xl);
 	}
 }

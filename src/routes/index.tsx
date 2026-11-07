@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { startSignIn } from "#/components/site/account";
 import { Booker } from "#/components/site/booker";
 import { BookingProvider } from "#/components/site/booking";
 import {
@@ -22,7 +23,6 @@ export const Route = createFileRoute("/")({
 function Home() {
 	const { days, taken, user } = Route.useLoaderData();
 	const router = useRouter();
-	const navigate = useNavigate();
 
 	async function book(courtId: string, date: string, hour: Hour): Promise<string> {
 		const court = courtById(courtId);
@@ -34,8 +34,8 @@ function Home() {
 				return `Booked: ${court?.short}, ${day?.label ?? date} at ${hour}. It’s under Your bookings.`;
 			}
 			if (result.reason === "signed-out") {
-				await navigate({ to: "/login" });
-				return "Sign in to book.";
+				// Straight to Gateweave ID, and back to the booker; nothing was booked.
+				return (await startSignIn("/#book")) ?? "Taking you to Gateweave ID to sign in.";
 			}
 			if (result.reason === "taken") {
 				await router.invalidate();

@@ -1,11 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { COURTS, HOURS, type Hour } from "#/lib/courts";
+import { SignInButton, SignOutButton } from "./account";
 import { useBooking } from "./booking";
 
 const scrollToBooker = () => document.getElementById("book")?.scrollIntoView();
 
-/** The search-led bar: the wordmark, a search that jumps the booker to a court or a time, and Book. */
+/**
+ * The search-led bar: the wordmark, a search that jumps the booker to a court or a time, and the
+ * way in or out. Signing in and out is Gateweave ID's (src/components/site/account.tsx).
+ */
 export function SiteNav({ signedIn }: { signedIn: boolean }) {
 	const { pick, setHour } = useBooking();
 	const input = useRef<HTMLInputElement>(null);
@@ -65,13 +69,16 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
 					</form>
 				</search>
 				{signedIn ? (
-					<Link className="link nav__book" to="/bookings">
-						Your bookings
-					</Link>
+					<div className="nav__book">
+						<Link className="link" to="/bookings">
+							Your bookings
+						</Link>
+						<SignOutButton className="link link--button" />
+					</div>
 				) : (
-					<Link className="link nav__book" to="/login">
-						Sign in
-					</Link>
+					<div className="nav__book">
+						<SignInButton next="/#book" className="link link--button" label="Sign in" />
+					</div>
 				)}
 			</div>
 		</header>

@@ -53,8 +53,13 @@ depends = ["id:deploy", "app:deploy"]
 run = "node scripts/app-register.mjs"
 
 [tasks."all:deploy"]
-description = "Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy"
+description = "Everything onto Cloudflare: app:register, which mise runs after id:deploy and app:deploy; then all:e2e proves it"
 depends = ["app:register"]
+run = "mise run all:e2e"
+
+[tasks."all:e2e"]
+description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, sign out ends both courts and ID; then they are deleted (scripts/all-e2e.mjs)"
+run = "node scripts/all-e2e.mjs"
 
 [tasks."app:undeploy"]
 description = "This app off Cloudflare, every piece: its registration with Gateweave ID, its Worker (domain, Durable Object, secrets, cron) and its D1; accounts and bookings gone for good (scripts/app-undeploy.mjs)"

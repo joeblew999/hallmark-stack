@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { SignInButton, SignOutButton } from "#/components/site/account";
 import { PlainNav } from "#/components/site/chrome";
 import { cancelBooking, myBookings } from "#/lib/bookings";
 import { courtById } from "#/lib/courts";
@@ -43,14 +44,24 @@ function Bookings() {
 					<div className="mine__head">
 						<h1>Your courts.</h1>
 						<p className="lead">
-							{user ? `Signed in as ${user.email}.` : "Sign in to see what you’ve booked."}
+							{user
+								? `Signed in as ${user.name} (${user.email}), through Gateweave ID.`
+								: "Sign in to see what you’ve booked."}
 						</p>
+						{user && (
+							<p className="mine__account">
+								{user.account && (
+									<a className="link" href={user.account}>
+										Your Gateweave ID account
+									</a>
+								)}
+								<SignOutButton className="link link--button" />
+							</p>
+						)}
 					</div>
 					{!user ? (
-						<p>
-							<Link className="btn" to="/login">
-								Sign in
-							</Link>
+						<p className="mine__empty">
+							<SignInButton next="/bookings" />
 						</p>
 					) : bookings.length === 0 ? (
 						<div className="mine__empty">

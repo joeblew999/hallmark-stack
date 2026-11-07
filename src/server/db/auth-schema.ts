@@ -33,8 +33,12 @@ export const session = sqliteTable(
 		userId: text("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
+		oidcSid: text("oidc_sid"),
 	},
-	(table) => [index("session_userId_idx").on(table.userId)],
+	(table) => [
+		index("session_userId_idx").on(table.userId),
+		index("session_oidcSid_idx").on(table.oidcSid),
+	],
 );
 
 export const account = sqliteTable(

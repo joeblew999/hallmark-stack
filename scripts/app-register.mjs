@@ -2,9 +2,10 @@
 // secret go straight into this app's Worker secrets (with OIDC_ISSUER), never printed. mise runs id:deploy and
 // app:deploy first (its `depends`).
 //
-// Registered means both halves are there: ID has this app's client (its D1) and this app has the settings (its
-// Worker's OIDC_CLIENT_ID). Then it is left as it is, so the client secret isn't replaced on every run. Either half
-// missing, as after ID is rebuilt on its own, it registers again and replaces the app's settings.
+// Registered means both halves are there: ID has this app's client (its D1), with the address ID sends people back
+// to after signing out, and this app has the settings (its Worker's OIDC_CLIENT_ID). Then it is left as it is, so the
+// client secret isn't replaced on every run. Either half missing or different, as after ID is rebuilt on its own, it
+// registers again and replaces the app's settings.
 //
 // Then it proves sign-in through ID: this app's sign-in starts, and ID's authorize page, for the client id the app
 // sent, takes the browser to ID's own login page. A client ID doesn't know would not.
@@ -19,6 +20,9 @@ import { fetchId, ID_DOMAIN, ID_WEB, idWrangler } from "./id-release.mjs";
 
 execFileSync("node", ["scripts/cloudflare-login.mjs"], { stdio: "inherit" });
 
+/** Where ID sends people after signing them out: this site's home page (src/components/site/account.tsx). */
+const POST_LOGOUT = [`https://${APP_DOMAIN}/`];
+
 fetchId();
 const appSecrets = JSON.parse(
 	execFileSync("wrangler", ["secret", "list", "--format", "json"], { encoding: "utf8" }),
@@ -32,7 +36,7 @@ const inId = JSON.parse(
 			"--remote",
 			"--json",
 			"--command",
-			`SELECT COUNT(*) AS clients FROM oauth_client WHERE json_extract(metadata, '$.app') = '${APP_ID}' AND reference_id IS NULL`,
+			`SELECT COUNT(*) AS clients FROM oauth_client WHERE json_extract(metadata, '$.app') = '${APP_ID}' AND reference_id IS NULL AND post_logout_redirect_uris = '${JSON.stringify(POST_LOGOUT)}'`,
 		],
 		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
 	),
@@ -68,6 +72,7 @@ async function register() {
 		name: APP_NAME,
 		redirectUris: [`https://${APP_DOMAIN}/api/auth/callback/oidc`],
 		backchannelLogoutUri: `https://${APP_DOMAIN}/api/auth/backchannel-logout/oidc`,
+		postLogoutRedirectUris: POST_LOGOUT,
 		requirePkce: true,
 	});
 	idWrangler(

@@ -1,0 +1,87 @@
+import { useState } from "react";
+import { authClient } from "#/lib/auth-client";
+import { LiveButton } from "./live-button";
+
+/** Better Auth's id for Gateweave ID (OIDC_PROVIDER in src/server/auth/oidc-sign-in.ts, out of the browser's reach). */
+const OIDC_PROVIDER = "oidc";
+
+/** Where a refused sign-in comes back to: the page that explains why (src/routes/login.tsx). */
+const REFUSED = "/login";
+
+/**
+ * Sends the browser to Gateweave ID, and back to `next` once signed in. ID's own page offers both
+ * signing in and making an account, and carries the request across either way. As Track's
+ * ProviderButton (apps/web/src/routes/login.tsx at b8b5ba0): the site finds out ID is down only now.
+ */
+export async function startSignIn(next: string): Promise<string | null> {
+	const { error } = await authClient.signIn.social({
+		provider: OIDC_PROVIDER,
+		callbackURL: next,
+		errorCallbackURL: REFUSED,
+	});
+	if (!error) return null;
+	return error.code === "PROVIDER_NOT_FOUND"
+		? "We could not reach Gateweave ID. Try again."
+		: (error.message ?? "Signing in did not work. Try again.");
+}
+
+/** "Sign in or create account": the one way in. */
+export function SignInButton({
+	next,
+	className,
+	label = "Sign in or create account",
+}: {
+	next: string;
+	className?: string;
+	label?: string;
+}) {
+	const [pending, setPending] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	async function onClick() {
+		setPending(true);
+		setError(null);
+		setError(await startSignIn(next));
+		// Going back from ID can bring this page back as it was, so it must not stay disabled.
+		setPending(false);
+	}
+
+	return (
+		<>
+			<LiveButton className={className} disabled={pending} onClick={onClick}>
+				{label}
+			</LiveButton>
+			{error && (
+				<span className="auth__msg" role="alert">
+					{error}
+				</span>
+			)}
+		</>
+	);
+}
+
+/**
+ * Signs out here and at Gateweave ID in one go. Better Auth's /sign-out ends this site's session and
+ * answers with ID's end-session address, which the browser client follows. ID ends its own session,
+ * tells every app through back-channel logout, and sends the browser back to this site's home page,
+ * which `mise run app:register` registers with ID as the way back.
+ */
+export function SignOutButton({ className }: { className?: string }) {
+	const [pending, setPending] = useState(false);
+
+	async function onClick() {
+		setPending(true);
+		const { data } = await authClient.signOut({
+			callbackURL: new URL("/", window.location.origin).href,
+		});
+		// The client is already on its way to ID. Without an address to follow (no ID account to sign
+		// out of), start again here; doing it anyway would cancel the way to ID.
+		if (!data?.url) window.location.assign("/");
+	}
+
+	return (
+		<LiveButton className={className} disabled={pending} onClick={onClick}>
+			Sign out
+		</LiveButton>
+	);
+}
