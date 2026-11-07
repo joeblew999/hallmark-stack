@@ -53,6 +53,8 @@ try {
 				js = js
 					.replaceAll(`${q}/assets/`, `${q}./assets/`)
 					.replaceAll(`${q}/favicon.svg${q}`, `${q}./favicon.svg${q}`);
+			// Vite's preload helper loads split chunks from the root ("/" + "assets/x.js"), resolved against its own module in assets/; "../" lands on the snapshot folder.
+			js = js.replace(/(`modulepreload`,[\w$]+=function\(e\)\{return)`\/`\+e\}/, "$1`../`+e}");
 			writeFileSync(file, js);
 		}
 	}
