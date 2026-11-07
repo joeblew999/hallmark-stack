@@ -81,7 +81,8 @@ Cloudflare, from mise (the root `mise.toml`):
 - `mise run id:deploy`: ID at its pinned release (`v0.10.4`, commit `bd1d4e6`, checked 2026-11-07), fetched into the
   git-ignored `vendor/gateweave-id/` and installed with aube, deployed to `id.ubuntusoftware.net` by ID's own deploy
   script (it creates ID's D1, applies its migrations and sets its own secret, as the "Deploy to Cloudflare" button
-  would); then this app registered with it, its client id and secret put straight into this Worker's secrets, never
+  would); ID's `OIDC_PAIRWISE_SECRET`, which turns its sign-in provider on, made once and kept by Cloudflare only (never
+  printed, never set again); then this app registered with it, its client id and secret put straight into this Worker's secrets, never
   printed. Sign up at ID straight away: the first account owns the server. It needs this app's Worker deployed first;
   without it, it stops before registering and says so.
 

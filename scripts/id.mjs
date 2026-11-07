@@ -13,6 +13,7 @@
 // Step 4 needs this app's Worker to exist (aube run deploy). Without it, this stops before registering, so no secret is
 // made and lost: deploy this app, then run it again.
 import { execFileSync, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -69,6 +70,27 @@ if (!text.includes(ID_DOMAIN)) {
 	);
 }
 run("node", ["scripts/deploy.mjs"], WEB);
+
+// ID's OpenID Connect provider stays off until OIDC_PAIRWISE_SECRET is set (ID's docs/self-hosting.md, "Turning on
+// the provider"). Changing it would give everybody new ids in every app, so it is made once and Cloudflare keeps it:
+// a Worker secret survives every deploy. Never printed, never stored anywhere else, never set again once there.
+const idWrangler = (args, options = {}) =>
+	execFileSync("node", ["apps/web/node_modules/wrangler/bin/wrangler.js", ...args], {
+		cwd: ROOT,
+		...options,
+	});
+const idSecrets = JSON.parse(
+	idWrangler(["secret", "list", "--format", "json"], { encoding: "utf8" }),
+);
+if (idSecrets.some(({ name }) => name === "OIDC_PAIRWISE_SECRET")) {
+	console.log("ID's OIDC_PAIRWISE_SECRET is already set; left as it is.");
+} else {
+	idWrangler(["secret", "put", "OIDC_PAIRWISE_SECRET"], {
+		input: randomBytes(48).toString("base64"),
+		stdio: ["pipe", "ignore", "inherit"],
+	});
+	console.log("ID's OIDC_PAIRWISE_SECRET is set (made here once; Cloudflare keeps it).");
+}
 console.log(
 	`\nGateweave ID is on https://${ID_DOMAIN}. Sign up there now: the first account owns the server.\n`,
 );
