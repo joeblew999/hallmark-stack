@@ -1,53 +1,117 @@
 # hallmark-stack
 
-A sports booking site (sample brand: Eastfield Courts) built with [Hallmark](https://github.com/Nutlope/hallmark), the design skill for Claude Code. It's a static page: `index.html` plus three stylesheets, with no build step.
+**The problem.** A design skill like [Hallmark](https://github.com/Nutlope/hallmark) makes pages that look designed,
+but left to itself it writes standalone HTML and CSS: nothing that signs people in, stores anything or deploys as an
+app. And an app stack left to itself gets generic, generated-looking pages. Getting both, a real app whose every page
+passes Hallmark's design gates, means locking Hallmark onto the stack so every later run builds inside it.
 
-## What's here
+**What hallmark-stack does.** It is one working app, a court booking site (sample brand: Eastfield Courts), built on
+the stack of [Gateweave's repositories](https://github.com/orgs/gateweavehq/repositories), taken from
+[gateweavehq/track](https://github.com/gateweavehq/track), and designed with Hallmark, with Hallmark
+locked to that stack: its tokens in Tailwind, its locked-system file (`DESIGN.md`) saying pages are TanStack routes,
+its skill pinned in the repo, and its lint run on the rendered build in CI. Tools are pinned with mise; packages are
+installed with aube.
 
-| Path                                   | What it is                                                                                                                 |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `index.html`                           | The page, plus the plain-JS behaviour: booker, site plan, sport switcher, sticky bar, `/` search                           |
-| `page.css`                             | The page styles. Lines 1–7 are the Hallmark stamp: every design decision, the critique line and the answered finish checks |
-| `tokens.css`, `base.css`               | Written by `theme.mjs scaffold grid`: the Grid theme's tokens and Hallmark's base rules                                    |
-| `images/`                              | Two photographs from Hallmark's library (credited in the page footer)                                                      |
-| `.hallmark/log.json`, `.hallmark/salt` | Hallmark's build log; the next build reads it so it doesn't repeat this one                                                |
-| `.claude/skills/hallmark/`             | Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT), so the repo works without a global install                     |
-| `.claude/settings.json`                | Hallmark's edit-time lint hook, pointed at the pinned copy via `$CLAUDE_PROJECT_DIR`                                       |
+## Tech stack
 
-`.hallmark/shots/` (render screenshots) is git-ignored, as Hallmark ships it.
+The stack is [Gateweave](https://gateweave.com)'s: every Gateweave product
+([all their repositories](https://github.com/orgs/gateweavehq/repositories)) is built on it, Track and
+[ID](https://github.com/gateweavehq/id) among them. Check there when the stack moves.
 
-## The design, in one place
+TanStack Start · React 19 · Tailwind CSS 4 · shadcn/ui · Better Auth · Drizzle ORM · Cloudflare Workers, Durable
+Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tooling: mise (node, aube), aube, Hallmark.
 
-The decisions live in the stamp at the top of `page.css`:
+## Track: the stack this is built on
 
-- Shape: Map / Diagram
-- Theme: Grid (Swiss poster: ultramarine field, one red mark, Radio Canada Big)
-- Hero: Stage
-- Nav: search-led bar
-- Footer: colophon block
-- Job: book a court
-- Signature: the court booker, with the chosen hour at poster scale
+[gateweavehq/track](https://github.com/gateweavehq/track) is an open-source issue tracker that runs entirely on
+Cloudflare. Its `apps/web` is the technology basis here: the same libraries, at the same pinned versions, wired the
+same way, in one package instead of Track's four.
 
-## Running and checking it
+Taken from Track at commit `b8b5ba0` (2026-11-06), checked 2026-11-07:
 
-Open `index.html` in a browser, or serve the folder with any static server.
+| What             | Track                                                                                                                                 | Here                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Versions         | `apps/web/package.json`, `pnpm-workspace.yaml` catalog                                                                                | `package.json`, the same versions                                            |
+| Worker entry     | `apps/web/src/server.ts`: own routes first, then TanStack Start's handler                                                             | `src/server.ts`: `/api/auth/*` to Better Auth, then TanStack Start           |
+| Vite             | `@cloudflare/vite-plugin` (SSR environment), Tailwind, TanStack Start, React                                                          | `vite.config.ts`, the same plugins                                           |
+| Auth             | Better Auth on D1 via Drizzle; built on first use (`getAuth`), config free of `cloudflare:workers` so the CLI can generate the schema | `src/server/auth/`, the same pattern; email and password only                |
+| D1               | Identity only, migrations from drizzle-kit                                                                                            | `migrations/`, identity only                                                 |
+| Durable Objects  | One per workspace, SQLite storage, the authority for its data                                                                         | `VenueDO` (`src/server/venue-do.ts`), the authority for bookings             |
+| Server functions | `createServerFn` with `.validator(zod)`, `getRequest()` for the session                                                               | `src/lib/bookings.ts`                                                        |
+| UI               | Tailwind 4 with shadcn/ui (`components.json`, new-york, radix-ui, lucide)                                                             | the same `components.json`; shadcn's variables mapped onto Hallmark's tokens |
+| Tests            | Vitest in Node and in workerd (`@cloudflare/vitest-plugin`), Playwright on the production build                                       | the same: `src/**/*.test.ts`, `test/` (workerd), `e2e/`                      |
+| Lint and format  | Biome (tabs, width 100)                                                                                                               | `biome.json`, the same settings                                              |
+| Not set up yet   | `.dev.vars` from a script with a random `BETTER_AUTH_SECRET`; a 503 without DB or secret                                              | `scripts/dev-setup.mjs`; the same 503                                        |
 
-The lint runs the same here as in a Claude cloud session. It needs Node 18+, Chrome for the render tier, and `puppeteer-core` on the Node path:
+Left out on purpose, because a booking site doesn't need them: Track's protocol, sync-server and sync-client packages
+(realtime sync, the IndexedDB replica, WebSockets, the service worker), MCP, the GitHub app, intake email,
+organizations, R2 attachments and email sending.
 
+Different on purpose: aube installs the packages, not pnpm, and mise pins node and aube (`mise.toml`); one package at
+the root, not a workspace; one `aube run ci` that GitHub runs exactly, instead of Track's several jobs.
+
+## Hallmark, locked to this stack
+
+Hallmark's pre-flight reads a project before it designs. Four things here make every later Hallmark run build in
+this stack, on this design, instead of writing standalone HTML:
+
+1. **`DESIGN.md`**: Hallmark's locked-system file. With it present, Hallmark skips its theme deal and works inside
+   the system: the Grid theme, its tokens, its controls, and the rule that a page is a route in `src/routes/` and a
+   part is a component in `src/components/`.
+2. **`src/styles/tokens.css`**: Hallmark's tokens in Tailwind 4's `@theme static` (as Hallmark's
+   `references/export-formats.md` says), so they are utilities and variables; `src/styles.css` maps shadcn/ui's
+   variables onto them and carries Hallmark's stamp in its first lines.
+3. **`package.json`, `components.json`, `.hallmark/preflight.json`**: what the pre-flight reads to know the framework.
+4. **`.claude/skills/hallmark/`**: Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT). Claude Code loads it
+   as a project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time
+   lint on every CSS change, and `aube run hallmark` runs its full lint on the rendered production build, in CI too.
+
+## How it works
+
+- **Accounts** are Better Auth's, in D1 (`src/server/auth/`, `migrations/`).
+- **Bookings** belong to one `VenueDO` per venue (`src/server/venue-do.ts`). A unique index on court, date and hour
+  makes a double booking impossible: the second one is refused and the page says someone took it.
+- **The page** (`src/routes/index.tsx`, `src/components/site/`) loads the taken courts for four days with a server
+  function, and books, lists and cancels with others (`src/lib/bookings.ts`).
+- **Courts** have opaque UUIDs (`src/lib/courts.ts`), never names, so renaming one can't touch a booking.
+- **A daily cron** deletes bookings older than a month.
+
+## Getting started
+
+[mise](https://mise.jdx.dev/getting-started.html) installed once per machine (`brew install mise`), and Google Chrome
+for the end-to-end tests and Hallmark's lint. Then:
+
+```sh
+mise install            # node and aube, as pinned in mise.toml
+aube install            # the packages, from aube-lock.yaml
+aube run dev:setup      # .dev.vars with a random secret; the local D1 migrated
+aube run dev            # http://localhost:4710
 ```
-node .claude/skills/hallmark/scripts/sloplint.mjs index.html --render --genre editorial
-```
 
-Expected result: `0 FAIL, 0 REFLEX, 0 WARN`. Without puppeteer and Chrome, the static checks still run.
+Every command is in [docs/commands.md](docs/commands.md), generated from `package.json`. `aube run ci` is everything
+GitHub's CI runs, and the same here.
 
 ## Not real yet
 
-- **Booking isn't connected.** The form has `data-endpoint=""`, and pressing Book says plainly that nothing was booked. Hallmark forbids a fake success state.
-- **Availability is a fixed sample pattern** (`taken()` in `index.html`). Swap it for the real API.
-- **Opening hours and the address are blank text slots** (`data-fill="hours"`, `data-fill="address"`).
-- **The court layout, sport details, coaching timetable and the name "Eastfield Courts" are samples.**
-- **Photo slots** `court-photo` and `pitch-photo` take your own pictures. Call `hallmarkSlots({ 'court-photo': 'yours.jpg' })` or replace the files.
+- **Sample content:** the name Eastfield Courts, the courts and their layout, the sport details and the coaching
+  timetable.
+- **Opening hours and the address** are blank text slots (`data-fill` in `src/components/site/sections.tsx`).
+- **The two photographs** are stand-ins from Hallmark's library, credited in the footer. Replace
+  `public/images/clay-court.jpg` and `public/images/goal.jpg` with your own.
+
+## Provenance and pins
+
+- **Versions** are Track's at `b8b5ba0`, checked 2026-11-07. node `24.22.2` (Track pins 24) and aube `2.9.0` are the
+  newest on that date.
+- **`puppeteer-core` is held at 25.12.0.** Hallmark's lint drives Chrome through it. Every later release depends on
+  `chromium-bidi` 157 or newer, which Google has published since October 2026 without npm provenance, and aube's
+  trust policy refuses that. 25.12.0 is the last release built on `chromium-bidi` 17.0.2, which has it. Checked
+  2026-11-07 against the npm registry.
+- **Biome** has two CSS rules turned off for `src/styles/` (`biome.json`). `!important` is how Hallmark's
+  reduced-motion and slot rules must win. The specificity-order warnings there are between selectors that never
+  match the same element.
 
 ## Updating Hallmark
 
-The pinned copy is upstream's `skills/hallmark/` folder. To move to a newer version, re-copy that folder from a newer `Nutlope/hallmark` commit and update the commit hash above.
+The pinned copy is upstream's `skills/hallmark/` folder. To move to a newer version, copy that folder from a newer
+`Nutlope/hallmark` commit over `.claude/skills/hallmark/`, update the commit above, and run `aube run hallmark`.

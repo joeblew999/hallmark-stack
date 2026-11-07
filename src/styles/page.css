@@ -161,6 +161,7 @@
 }
 .nav__book {
 	font-size: var(--text-md);
+	white-space: nowrap;
 }
 
 /* ---------- hero: Stage, the booker on the field ---------- */

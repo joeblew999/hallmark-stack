@@ -12,18 +12,19 @@
 		"snapshot": "node scripts/snapshot.mjs",
 		"deploy": "vite build && wrangler deploy",
 		"typegen": "wrangler types && tsr generate",
-		"typecheck": "wrangler types && tsr generate && tsc",
+		"typecheck": "wrangler types && tsr generate && tsc && tsc -p test",
 		"check": "biome check",
 		"format": "biome check --write",
 		"test": "vitest run",
 		"test:e2e": "playwright test",
-		"hallmark": "node .claude/skills/hallmark/scripts/sloplint.mjs src/styles.css src/styles --url http://localhost:4710/ --render --genre editorial",
+		"hallmark": "node scripts/dev-setup.mjs && node scripts/hallmark.mjs",
 		"auth:schema": "aube dlx auth@1.7.16 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"dev:setup": "node scripts/dev-setup.mjs",
-		"verify": "aube run check && aube run typecheck && aube run test && aube run build"
+		"ci": "aube run commands --check && aube run check && aube run typecheck && aube run test && aube run build && aube run test:e2e && aube run hallmark",
+		"commands": "node scripts/commands.mjs"
 	},
 	"dependencies": {
 		"@fontsource/radio-canada": "5.3.0",
@@ -61,5 +62,26 @@
 		"vite": "8.3.5",
 		"vitest": "5.0.5",
 		"wrangler": "4.156.0"
+	},
+	"scriptsInfo": {
+		"dev": "Run the app on http://localhost:4710 (the Worker in workerd, D1 and the Durable Object local)",
+		"build": "Production build into dist/",
+		"preview": "Serve the production build on http://localhost:4711",
+		"snapshot": "Save the built home page as static files in dist/snapshot/, for the artifact viewer",
+		"deploy": "Build and deploy to Cloudflare (run db:migrate:remote first when migrations change)",
+		"typegen": "Regenerate the Worker's types (worker-configuration.d.ts) and the route tree",
+		"typecheck": "Type-check the app and the tests (regenerates types first)",
+		"check": "Biome lint and format check",
+		"format": "Biome: fix formatting and safe lint fixes",
+		"test": "Vitest: unit tests in Node, and the Durable Object in workerd",
+		"test:e2e": "Playwright on the production build in installed Chrome: sign up, book, double booking refused, cancel",
+		"hallmark": "Hallmark's sloplint on the rendered production build at eight widths; fails on anything but clean",
+		"auth:schema": "Regenerate the Better Auth tables (src/server/db/auth-schema.ts) from src/server/auth/config.ts",
+		"db:generate": "Drizzle: write a migration into migrations/ from the schema",
+		"db:migrate:local": "Apply migrations to the local D1",
+		"db:migrate:remote": "Apply migrations to the deployed D1",
+		"dev:setup": "One-time: write .dev.vars with a random BETTER_AUTH_SECRET and migrate the local D1",
+		"ci": "Everything CI runs, in order: check, typecheck, test, build, test:e2e, hallmark. GitHub runs exactly this",
+		"commands": "Regenerate docs/commands.md from these scripts (--check fails if it is out of date)"
 	}
 }

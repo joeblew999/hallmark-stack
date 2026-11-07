@@ -17,5 +17,5 @@
 		"types": ["vite/client"],
 		"paths": { "#/*": ["./src/*"] }
 	},
-	"include": ["src", "*.ts", "e2e", "test", "worker-configuration.d.ts"]
+	"include": ["src", "*.ts", "e2e", "worker-configuration.d.ts"]
 }

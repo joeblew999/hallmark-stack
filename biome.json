@@ -13,7 +13,8 @@
 			"!**/worker-configuration.d.ts",
 			"!**/migrations/meta",
 			"!.claude/skills/hallmark",
-			"!.hallmark"
+			"!.hallmark",
+			"!docs/commands.md"
 		]
 	},
 	"formatter": {
