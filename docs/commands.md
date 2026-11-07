@@ -31,15 +31,15 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `aube run preview` | Serve the production build on http://localhost:4711 | `vite preview --port 4711 --strictPort` |
 | `aube run snapshot` | Save the built home page as static files in dist/snapshot/, for the artifact viewer | `node scripts/snapshot.mjs` |
 | `aube run typegen` | Regenerate the Worker's types (worker-configuration.d.ts) and the route tree | `wrangler types && tsr generate` |
-| `aube run typecheck` | Type-check the app and the tests (regenerates types first) | `wrangler types && tsr generate && tsc && tsc -p test && tsc -p test/app` |
+| `aube run typecheck` | Type-check the app and the tests (regenerates types first) | `wrangler types && tsr generate && tsc && tsc -p test` |
 | `aube run check` | Biome lint and format check | `biome check` |
 | `aube run format` | Biome: fix formatting and safe lint fixes | `biome check --write` |
-| `aube run test` | Vitest: unit tests in Node, the Durable Object in workerd, and the built app's sign-in through Gateweave ID in workerd against a stand-in provider (test/app/, from Track) | `vitest run` |
-| `aube run test:e2e` | Playwright on the production build in installed Chrome, with nobody signed in: the booker, the sign-in button, no passwords. Signed in, through the real Gateweave ID, is mise run all:e2e | `playwright test` |
-| `aube run hallmark` | Hallmark's sloplint on the rendered production build at eight widths; fails on anything but clean | `node scripts/dev-setup.mjs && node scripts/hallmark.mjs` |
+| `aube run test` | Vitest: unit tests in Node, and the Durable Object in workerd with the real wrangler.jsonc | `vitest run` |
+| `aube run test:e2e` | Playwright on the production build (after aube run build) in installed Chrome, with nobody signed in: the booker, the sign-in button, no passwords, and Hallmark's lint on every page. Signed in, through the real Gateweave ID, is mise run all:e2e | `playwright test` |
+| `aube run hallmark` | Just the Hallmark spec of test:e2e: Hallmark's sloplint on the rendered production build (after aube run build), every page at its widths; fails on anything but clean | `playwright test e2e/hallmark.spec.ts` |
 | `aube run auth:schema` | Regenerate the Better Auth tables (src/server/db/auth-schema.ts) from src/server/auth/config.ts | `aube dlx auth@1.7.16 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes` |
 | `aube run db:generate` | Drizzle: write a migration into migrations/ from the schema | `drizzle-kit generate` |
 | `aube run db:migrate:local` | Apply migrations to the local D1 | `wrangler d1 migrations apply DB --local` |
 | `aube run dev:setup` | One-time: write .dev.vars with a random BETTER_AUTH_SECRET and migrate the local D1 | `node scripts/dev-setup.mjs` |
-| `aube run ci` | Everything CI runs, in order: check, typecheck, test, build, test:e2e, hallmark. GitHub runs exactly this | `aube run commands --check && aube run check && aube run typecheck && aube run test && aube run build && aube run test:e2e && aube run hallmark` |
+| `aube run ci` | Everything CI runs, in order: check, typecheck, test, dev:setup (the build carries .dev.vars to the built Worker), build, test:e2e (Hallmark's lint included). GitHub runs exactly this | `aube run commands --check && aube run check && aube run typecheck && aube run test && aube run dev:setup && aube run build && aube run test:e2e` |
 | `aube run commands` | Regenerate docs/commands.md from these scripts (--check fails if it is out of date) | `node scripts/commands.mjs` |

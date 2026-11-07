@@ -1,6 +1,5 @@
 // mise run all:e2e: the live courts site and the live Gateweave ID, end to end, in Chrome, with no human (issue #3).
-// It is the only test of signing in, booking and signing out through the real ID; the Worker tests in test/app/ hold
-// the app's side against a stand-in.
+// It is the only test of signing in, booking and signing out through the real ID.
 //
 //   1. Two throwaway people are made at ID through ID's own invitation route: an invitation row for a made-up address,
 //      holding only the SHA-256 of a random token, as ID's own "invite" writes it (ID's docs/architecture.md, "An
@@ -259,7 +258,7 @@ try {
 	console.log("   B is signed out of ID, and courts heard it and ended B's session.");
 
 	console.log("\n6. Hallmark's lint on the signed-in pages, as deployed (saved in step 3).");
-	// Over HTTP, as scripts/hallmark.mjs does: given a file, the lint would also read the built CSS beside it as
+	// Over HTTP, as e2e/hallmark.spec.ts does: given a file, the lint would also read the built CSS beside it as
 	// source. The home page is a page; Your bookings is an app screen.
 	const types = {
 		html: "text/html",

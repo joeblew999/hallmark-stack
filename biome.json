@@ -8,7 +8,7 @@
 	"files": {
 		"includes": [
 			"**",
-			"!pnpm-lock.yaml",
+			"!aube-lock.yaml",
 			"!**/routeTree.gen.ts",
 			"!**/worker-configuration.d.ts",
 			"!**/migrations/meta",

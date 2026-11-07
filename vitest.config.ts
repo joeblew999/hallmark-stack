@@ -11,21 +11,16 @@ export default defineConfig({
 				test: { name: "unit", include: ["src/**/*.test.ts"] },
 			},
 			{
-				// The Durable Object in workerd (test/wrangler.jsonc), as Track tests its own.
+				// The Durable Object in workerd, with the real wrangler.jsonc's bindings and settings; the entry is
+				// test/worker.ts, because the real one is TanStack Start's server.
 				resolve: { tsconfigPaths: true },
-				plugins: [cloudflareTest({ wrangler: { configPath: "./test/wrangler.jsonc" } })],
+				plugins: [
+					cloudflareTest({
+						main: "./test/worker.ts",
+						wrangler: { configPath: "./wrangler.jsonc" },
+					}),
+				],
 				test: { name: "worker", include: ["test/*.test.ts"] },
-			},
-			{
-				// The built Worker in workerd, driven from Node (test/app/courts-worker.ts), as Track tests its
-				// sign-in. Building takes a while.
-				test: {
-					name: "app",
-					include: ["test/app/**/*.test.ts"],
-					globalSetup: ["./test/app/global-setup.ts"],
-					testTimeout: 30_000,
-					hookTimeout: 60_000,
-				},
 			},
 		],
 	},

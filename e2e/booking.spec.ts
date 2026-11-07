@@ -40,6 +40,16 @@ test("the sign-in page says signing in isn't set up, and has no password", async
 	await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
 
+test("a refused sign-in is explained in courts' own words, never the URL's", async ({ page }) => {
+	await open(page, "/login?error=access_denied");
+	await expect(page.locator(".auth")).toContainText(
+		"You chose not to sign in. Nothing was booked.",
+	);
+	await open(page, "/login?error=<b>anything+at+all</b>");
+	await expect(page.locator(".auth")).toContainText("Signing in did not work. Try again.");
+	await expect(page.locator(".auth")).not.toContainText("anything at all");
+});
+
 test("the bookings page asks to sign in", async ({ page }) => {
 	await open(page, "/bookings");
 	await expect(page.locator(".mine__head")).toContainText("Sign in to see what you’ve booked.");
