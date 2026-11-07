@@ -6,7 +6,7 @@ declare namespace Cloudflare {
 		BETTER_AUTH_URL?: string;
 		/**
 		 * Sign-in through Gateweave ID (or any OpenID Connect provider): its issuer URL and this app's client id and
-		 * secret there. Needs all three. `mise run id:deploy` sets them as this Worker's secrets.
+		 * secret there. Needs all three. `mise run app:register` sets them as this Worker's secrets.
 		 */
 		OIDC_ISSUER?: string;
 		OIDC_CLIENT_ID?: string;

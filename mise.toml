@@ -1,7 +1,8 @@
 #:schema https://mise.jdx.dev/schema/mise.json
 
-# Every tool this repo needs, pinned. `mise install` gets them; nothing is installed globally.
-# The commands themselves are package.json scripts (see docs/commands.md).
+# The control plane: every tool this repo needs, pinned (`mise install` gets them; nothing is installed globally),
+# and the tasks for what sits outside the app: Cloudflare, Gateweave ID, deploying. The app's own commands are
+# package.json scripts. All of them are in docs/commands.md.
 
 [settings]
 # Any npm: tool mise installs goes through aube too.
@@ -26,5 +27,17 @@ description = "End this repo's Cloudflare login (wrangler logout: the token is r
 run = "node scripts/cloudflare-logout.mjs"
 
 [tasks."id:deploy"]
-description = "Deploy Gateweave ID (pinned v0.10.4) to id.ubuntusoftware.net with ID's own deploy script, then register this app with it: its client id and secret go into this Worker's secrets, never printed (scripts/id.mjs)"
-run = "node scripts/id.mjs"
+description = "Gateweave ID (pinned v0.10.4) onto Cloudflare at id.ubuntusoftware.net, by ID's own deploy script; its OIDC_PAIRWISE_SECRET (which turns its sign-in provider on) made once, kept by Cloudflare, never printed or reset (scripts/id-deploy.mjs)"
+run = "node scripts/id-deploy.mjs"
+
+[tasks."app:deploy"]
+description = "This app onto Cloudflare at courts.ubuntusoftware.net: build, D1 migrations before new code (after, on the first deploy, which creates the D1), BETTER_AUTH_SECRET made once and never printed (scripts/app-deploy.mjs)"
+run = "node scripts/app-deploy.mjs"
+
+[tasks."app:register"]
+description = "This app registers itself with Gateweave ID; its client id and secret go straight into its Worker secrets, never printed; already registered, it does nothing (scripts/app-register.mjs)"
+run = "node scripts/app-register.mjs"
+
+[tasks."all:deploy"]
+description = "Everything onto Cloudflare, in order: id:deploy, app:deploy, app:register"
+run = ["mise run id:deploy", "mise run app:deploy", "mise run app:register"]
