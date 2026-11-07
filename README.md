@@ -88,7 +88,7 @@ own pages. Courts has no passwords, no sign-up and no login form.
 - **Why not both in one go from courts:** ID's end-session would do it, and courts sent it correctly, but Gateweave
   ID asks "Confirm logout" even with a good `id_token_hint`, and then its own Content Security Policy
   (`form-action 'self'`) stops the browser coming back to courts: the person is signed out, but left on ID's page.
-  Seen live on 2026-11-07 on v0.10.4; the same code is in v0.10.6 (issue #3). When ID fixes that, courts can go
+  Seen live on 2026-11-07 on v0.10.4; the same code is still in v0.11.4, checked 2026-11-07 (issue #7). When ID fixes that, courts can go
   back to it.
 
 **From Track, copied and owned** (Track's auth lives in its private app package, so there is nothing to depend on;
@@ -109,7 +109,7 @@ deleting an account (ID's), sync sockets.
 
 The real ID is tested end to end by `mise run all:e2e staging`.
 
-ID is pinned at release `v0.10.6`, commit `793ce73`, checked 2026-11-07 (v0.10.5 closed a password check a stolen session cookie could use), in `scripts/id-release.mjs`: `ID_RELEASE` is the tag and `ID_COMMIT` the commit it named, which every ID task checks (`fetchId`), and ID's packages come from ID's own lockfile. Deploying it, and
+ID is pinned at release `v0.11.4`, commit `fd09b4b`, checked 2026-11-07 (v0.11.x: a session and its person read in one query, password tries held per person, and "sign out everywhere" on the account page; no database migrations since v0.10.6), in `scripts/id-release.mjs`: `ID_RELEASE` is the tag and `ID_COMMIT` the commit it named, which every ID task checks (`fetchId`), and ID's packages come from ID's own lockfile. Deploying it, and
 registering this app with it, are mise tasks: see Deploying, below.
 
 Both run on Custom Domains on `ubuntusoftware.net`: two Workers on `workers.dev` can't reach each other at all. Issues
