@@ -52,7 +52,7 @@ function Bookings() {
 							<p className="mine__account">
 								{user.account && (
 									<a className="link" href={user.account}>
-										Your Gateweave ID account
+										Your Gateweave ID account, to sign out everywhere
 									</a>
 								)}
 								<SignOutButton className="link link--button" />

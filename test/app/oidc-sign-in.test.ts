@@ -1,7 +1,7 @@
 // From Gateweave Track (github.com/gateweavehq/track) at b8b5ba0: apps/web/test/oidc-sign-in.test.ts, the cases for an
 // app whose only way in is Gateweave ID (issue #3). Track's cases for its own password accounts (linking, signing in
-// with a password while the provider is down), for leaving the provider alone at sign-out, for sync sockets and for
-// its demo are left out. New here: name and email are taken from ID at every sign-in, and signing out goes on to ID.
+// with a password while the provider is down), for sync sockets and for its demo are left out. New here: name and
+// email are taken from ID at every sign-in.
 // The real ID is tested end to end by `mise run all:e2e`.
 import type { JWTPayload } from "jose";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -166,24 +166,21 @@ describe("signing in through Gateweave ID", () => {
 		expect((await providerAccount(courts, "sub-new"))?.user_id).toBe(session?.user.id);
 	});
 
-	it("keeps only the ID token, the first time or the next", async () => {
+	it("keeps none of the provider's tokens, the first time or the next", async () => {
 		const person = { sub: "sub-tokens", email: "tokens@oidc.test" };
-		const noKeys = {
+		const noTokens = {
 			access_token: null,
 			refresh_token: null,
+			id_token: null,
 			access_token_expires_at: null,
 			refresh_token_expires_at: null,
 		};
 
 		await signIn(courts, provider, person);
-		const first = await providerAccount(courts, person.sub);
-		expect(first).toMatchObject(noKeys);
-		expect(first?.id_token).toEqual(expect.any(String));
+		expect(await providerAccount(courts, person.sub)).toMatchObject(noTokens);
 
 		await signIn(courts, provider, person);
-		const next = await providerAccount(courts, person.sub);
-		expect(next).toMatchObject(noKeys);
-		expect(next?.id_token).not.toBe(first?.id_token);
+		expect(await providerAccount(courts, person.sub)).toMatchObject(noTokens);
 	});
 
 	it("signs them in to the same account again, with the provider's new session", async () => {
@@ -276,28 +273,15 @@ describe("signing in through Gateweave ID", () => {
 		expect(await sessionIdsOf(courts, session?.user.id ?? "")).toEqual(["sid-userinfo"]);
 	});
 
-	it("signs out at ID too: ends the session here and names ID's end-session to go on to", async () => {
+	it("leaves the provider alone when someone signs out here", async () => {
 		const client = newClient();
-		const person = { sub: "sub-signs-out", email: "signs-out@oidc.test" };
-		const { cookie } = await signIn(courts, provider, person, client);
-		const idToken = (await providerAccount(courts, person.sub))?.id_token;
-		// The hint has to be there, or ID asks "Sign out?" first.
-		expect(idToken).toEqual(expect.any(String));
-
-		const response = await authApi(courts, "/sign-out", {
-			client,
-			cookie,
-			body: { callbackURL: `${origin}/` },
+		const { cookie } = await signIn(courts, provider, {
+			sub: "sub-signs-out",
+			email: "signs-out@oidc.test",
 		});
-
+		const response = await authApi(courts, "/sign-out", { client, cookie, body: {} });
 		expect(response.status).toBe(200);
-		const { url, redirect } = (await response.json()) as { url: string; redirect: boolean };
-		expect(redirect).toBe(true);
-		const endSession = new URL(url);
-		expect(`${endSession.origin}${endSession.pathname}`).toBe(`${OIDC.issuer}/end-session`);
-		expect(endSession.searchParams.get("id_token_hint")).toBe(idToken);
-		expect(endSession.searchParams.get("client_id")).toBe(OIDC.clientId);
-		expect(endSession.searchParams.get("post_logout_redirect_uri")).toBe(`${origin}/`);
+		expect(await response.json()).toEqual({ success: true });
 		expect(await isSignedIn(courts, cookie)).toBe(false);
 	});
 

@@ -61,22 +61,18 @@ export function SignInButton({
 }
 
 /**
- * Signs out here and at Gateweave ID in one go. Better Auth's /sign-out ends this site's session and
- * answers with ID's end-session address, which the browser client follows. ID ends its own session,
- * tells every app through back-channel logout, and sends the browser back to this site's home page,
- * which `mise run app:register` registers with ID as the way back.
+ * Signs out of this site, and leaves the person signed in at Gateweave ID, as Track does. Signing out
+ * at ID (its account page) signs them out here too, through back-channel logout. Signing out of both
+ * in one go, through ID's end-session, waits on two problems in Gateweave ID v0.10.4 (issue #3).
  */
 export function SignOutButton({ className }: { className?: string }) {
 	const [pending, setPending] = useState(false);
 
 	async function onClick() {
 		setPending(true);
-		const { data } = await authClient.signOut({
-			callbackURL: new URL("/", window.location.origin).href,
-		});
-		// The client is already on its way to ID. Without an address to follow (no ID account to sign
-		// out of), start again here; doing it anyway would cancel the way to ID.
-		if (!data?.url) window.location.assign("/");
+		await authClient.signOut();
+		// A fresh page, so nothing of theirs stays on screen.
+		window.location.assign("/");
 	}
 
 	return (

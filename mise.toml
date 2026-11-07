@@ -58,7 +58,7 @@ depends = ["app:register"]
 run = "mise run all:e2e"
 
 [tasks."all:e2e"]
-description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, sign out ends both courts and ID; then they are deleted (scripts/all-e2e.mjs)"
+description = "The live courts site through the live Gateweave ID, in Chrome, no human: two throwaway people invited into ID sign in, a double booking is refused, a cancel frees it, courts' Sign out signs one out of courts, signing out at ID ends the other's courts session; then they are deleted (scripts/all-e2e.mjs)"
 run = "node scripts/all-e2e.mjs"
 
 [tasks."app:undeploy"]

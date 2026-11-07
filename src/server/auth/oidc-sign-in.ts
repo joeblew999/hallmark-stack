@@ -1,9 +1,10 @@
 // From Gateweave Track (github.com/gateweavehq/track) at b8b5ba0: apps/web/src/server/auth/oidc-sign-in.ts. Changed
 // for an app whose only way in is Gateweave ID (issue #3), and nothing else:
-//   - Signing out here signs out at ID too (`disableProviderLogout` is gone), so the account keeps the ID token, as
-//     the `id_token_hint` ID's end-session needs to sign someone out without asking first. No other token is kept.
 //   - Name and email are taken from ID at every sign-in (`overrideUserInfo`): ID is where people change them.
 //   - Words about passwords and Track.
+// Signing out here leaves someone signed in at ID, as Track does. Signing out everywhere through ID's end-session
+// waits on two problems in Gateweave ID v0.10.4 (issue #3): it asks "Confirm logout" even with a good
+// `id_token_hint`, and its own `form-action 'self'` then stops the browser coming back.
 import type { Account, GenericEndpointContext, Session } from "better-auth";
 import { createAuthEndpoint, NO_STORE_HEADERS } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
@@ -42,9 +43,9 @@ export function oidcSignIn(db: Database, { issuer, clientId, clientSecret }: Oid
 		requireIdTokenVerification: true,
 		// The method every provider has to take, which the plugin's default is not.
 		authentication: "basic" as const,
-		// Signing out here sends the browser on to the provider's end-session, so it signs them out
-		// there, and every app they came through hears it through its back-channel endpoint, this
-		// one included. Better Auth's /sign-out builds that address with the ID token kept below.
+		// Signing out here leaves someone signed in to their provider, as other apps they use it
+		// for would expect. Signing out there reaches this app through the endpoint below.
+		disableProviderLogout: true,
 		// Name and email are the provider's, so they are taken again at every sign-in.
 		overrideUserInfo: true,
 		mapProfileToUser: (profile: { email?: unknown; email_verified?: unknown; name?: unknown }) => ({
@@ -224,22 +225,18 @@ function errorName(error: unknown) {
 	return "code" in error && typeof error.code === "string" ? error.code : error.name;
 }
 
-/**
- * What is cleared from an account: the app signs people in, and never acts for them at a provider.
- * The ID token stays: it is no key to anything, only the provider's word about who signed in, and
- * the `id_token_hint` that signs someone out at the provider without a page asking them first. A
- * hint from another device's later sign-in names another session, and then the provider asks.
- */
+/** What is cleared from an account: the app signs people in, and never acts for them at a provider. */
 const NO_TOKENS = {
 	accessToken: null,
 	refreshToken: null,
+	idToken: null,
 	accessTokenExpiresAt: null,
 	refreshTokenExpiresAt: null,
 };
 
 /**
  * The database hooks sign-in through a provider needs. The account hook keeps none of the provider's
- * tokens but its ID token (see above). It is also the place that sees the ID token, which by then has been
+ * tokens. It is also the only place that sees the ID token, which by then has been
  * checked against the provider's keys and this request's nonce, so it takes the provider's session id
  * from it, for the session row made next in the same request. That row's `oidcSid` is what a logout
  * token names.

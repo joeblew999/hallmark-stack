@@ -10,8 +10,10 @@
 //   2. Each signs in to courts with the header's "Sign in": to ID, where they are signed in already, and straight back.
 //   3. A and B pick the same hour; A books it, and B's booking of it is refused. B sees it taken. A cancels it, and B
 //      sees it free.
-//   4. A presses "Sign out": signed out of courts and, through ID's end-session, of ID too.
-//   5. Both people are deleted from ID and from courts, whatever happened.
+//   4. A presses courts' "Sign out": signed out of courts, still signed in at ID, as Track does. (Signing out of both
+//      in one go waits on two problems in Gateweave ID v0.10.4, issue #3.)
+//   5. B signs out at ID, as on ID's account page: ID's back-channel logout ends B's session in courts.
+//   6. Both people are deleted from ID and from courts, whatever happened.
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { chromium } from "@playwright/test";
@@ -35,7 +37,7 @@ function inId(sql) {
 	return JSON.parse(out)[0].results;
 }
 
-/** One SQL statement on this app's D1. */
+/** One SQL statement on this app's D1, answered as rows. */
 function inCourts(sql) {
 	const run = spawnSync(
 		"node",
@@ -43,6 +45,7 @@ function inCourts(sql) {
 		{ encoding: "utf8" },
 	);
 	if (run.status !== 0) throw new Error(`courts' D1 refused: ${run.stderr}`);
+	return JSON.parse(run.stdout)[0].results;
 }
 
 /** A made-up person: an address at example.com, which is never anyone's, and a password for this run only. */
@@ -92,6 +95,8 @@ async function signedIn(context, origin) {
 
 let browser;
 let failed = false;
+/** Each person's page, and every address it went to, for saying where a failed run got stuck. */
+const watched = [];
 try {
 	console.log("\n1. Two throwaway people, invited into Gateweave ID.");
 	const [owner] = inId("SELECT owner_id AS id FROM deployment WHERE id = 1");
@@ -119,7 +124,18 @@ try {
 					`ID refused the invitation (${accepted.status()}): ${await accepted.text()}`,
 				);
 			}
-			return { ...each, context, page: await context.newPage() };
+			const page = await context.newPage();
+			const went = [];
+			const refused = [];
+			page.on("framenavigated", (frame) => {
+				if (frame === page.mainFrame()) went.push(frame.url());
+			});
+			// What the browser refused, such as a page's Content Security Policy blocking a form or a redirect.
+			page.on("console", (message) => {
+				if (message.type() === "error") refused.push(message.text());
+			});
+			watched.push({ name: each.name, context, page, went, refused });
+			return { ...each, context, page };
 		}),
 	);
 	console.log(`   ${a.email} and ${b.email} are signed in at ID.`);
@@ -160,23 +176,57 @@ try {
 		throw new Error("A cancelled, but B still sees it taken");
 	console.log("   A cancelled it, and B sees it free.");
 
-	console.log("\n4. A signs out: out of courts and, through ID's end-session, out of ID.");
+	console.log(
+		"\n4. A presses Sign out in courts: out of courts, still signed in at ID, as Track does.",
+	);
 	await open(a.page, "/");
 	await a.page.locator(".nav").getByRole("button", { name: "Sign out" }).click();
-	// Only there once ID's end-session has sent the browser back here. Should ID ask "Sign out?" first instead, this
-	// waits in vain and the run fails.
+	// The page comes back fresh, signed out.
 	await a.page.locator(".nav").getByRole("button", { name: "Sign in" }).waitFor({ timeout: WAIT });
 	if (await signedIn(a.context, COURTS)) throw new Error("A is still signed in to courts");
-	if (await signedIn(a.context, ID)) throw new Error("A is still signed in at ID");
-	console.log("   A is signed out of courts and of ID.");
+	if (!(await signedIn(a.context, ID))) throw new Error("A was signed out at ID as well");
+	console.log("   A is signed out of courts, and still signed in at ID.");
 	if (!(await signedIn(b.context, COURTS))) throw new Error("B was signed out too");
 	console.log("   B is still signed in.");
+
+	console.log(
+		"\n5. B signs out at ID, as on ID's account page: ID tells courts, which ends B's session there.",
+	);
+	const out = await b.context.request.post(`${ID}/api/auth/sign-out`, {
+		headers: { origin: ID },
+		data: {},
+	});
+	if (!out.ok()) throw new Error(`ID refused B's sign-out (${out.status()}): ${await out.text()}`);
+	if (await signedIn(b.context, ID)) throw new Error("B is still signed in at ID");
+	// Back-channel logout: ID's Worker posts to courts' /api/auth/backchannel-logout/oidc, retrying from a queue.
+	const until = Date.now() + WAIT;
+	while (await signedIn(b.context, COURTS)) {
+		if (Date.now() > until) throw new Error("B signed out at ID, but is still signed in to courts");
+		await new Promise((done) => setTimeout(done, 1_000));
+	}
+	console.log("   B is signed out of ID, and courts heard it and ended B's session.");
 } catch (error) {
 	failed = true;
 	console.error(`\nall:e2e failed: ${error instanceof Error ? error.message : error}`);
+	for (const { name, context, page, went, refused } of watched) {
+		const said = (
+			await page
+				.locator("body")
+				.innerText()
+				.catch(() => "")
+		).replace(/\s+/g, " ");
+		console.error(
+			`\n   ${name} went to:\n     ${went.join("\n     ")}\n   and the page says: ${said.slice(0, 300)}`,
+		);
+		if (refused.length > 0)
+			console.error(`   The browser's console said:\n     ${refused.join("\n     ")}`);
+		console.error(
+			`   Signed in now: courts ${await signedIn(context, COURTS).catch(() => "?")}, ID ${await signedIn(context, ID).catch(() => "?")}`,
+		);
+	}
 } finally {
 	await browser?.close();
-	console.log("\n5. The two people, deleted from ID and from courts.");
+	console.log("\n6. The two people, deleted from ID and from courts.");
 	try {
 		inId(`DELETE FROM user WHERE email IN (${addresses})`);
 		inId(`DELETE FROM deployment_invitation WHERE email IN (${addresses})`);
@@ -189,5 +239,5 @@ try {
 }
 if (failed) process.exit(1);
 console.log(
-	"\nall:e2e passed: sign in through ID, a double booking refused, cancel, sign out of both.\n",
+	"\nall:e2e passed: sign in through ID, a double booking refused, cancel, sign out of courts, sign out at ID ends courts.\n",
 );
