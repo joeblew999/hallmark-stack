@@ -16,6 +16,8 @@
 [settings]
 # Any npm: tool mise installs goes through aube too.
 npm.package_manager = "aube"
+# mise 2026.11 fails to install aube 2.9.0 while it fetches aube's agent skill (a 404); it isn't needed.
+skills.fetch = false
 # One task at a time, in the order `depends` lists them: the deploys log in, and id:deploy waits for a person.
 jobs = 1
 
@@ -23,7 +25,7 @@ jobs = 1
 # The one JavaScript runtime (Track pins Node 24 in its .node-version).
 node = "24.22.2"
 # Installs the Node packages from package.json and pnpm-lock.yaml. No npm, no pnpm.
-aube = "2.9.0"
+aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
 
 [env]
 # The packages' own binaries (wrangler, vite, biome, playwright) by name.
@@ -44,6 +46,10 @@ run = "aube audit"
 [tasks."deps:update"]
 description = "Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). The auth:schema script's auth@ pin moves by hand"
 run = "aube update --latest --exact"
+
+[tasks."tools:update"]
+description = "This file's own tools to their newest, as exact pins: node within 24 (Track pins Node 24), aube to its latest (mise use --pin); then aube run ci proves it. `mise outdated --bump` shows what is newer, a Node major included"
+run = "mise use --pin node@24 aube@latest"
 
 [tasks."cloudflare:login"]
 description = "Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who"
