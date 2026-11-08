@@ -26,8 +26,8 @@ task.timings = true
 jobs = 1
 
 [tools]
-# The control plane's side: the tools that run the repo. The app's side, node included, is package.json and
-# aube-lock.yaml. Which is which, and the four tasks that keep both current: README, Keeping versions current.
+# The tools that run the repo (tools:check, tools:update). The app's packages and node are package.json's
+# (deps:check, deps:update). README, Keeping versions current.
 # Installs the Node packages from package.json and aube-lock.yaml. No npm, no pnpm.
 aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
 
@@ -38,22 +38,22 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 # with none set, as on a Mac, it changes nothing.
 NODE_USE_ENV_PROXY = "1"
 
-# Keeping versions current (README): deps: is the app's side, tools: this file's. check reads, update changes.
+# Keeping versions current (README): deps: is package.json, tools: this file. check reads, update changes.
 # Not in CI: their answers change whenever something is published.
 [tasks."deps:check"]
-description = "The app's side, checked: aube audit (advisories, every package in aube-lock.yaml), then aube outdated (package.json against npm's latest); fails only on what's new, as held packages and accepted advisories are listed in aube-workspace.yaml"
+description = "Are the app's packages behind or unsafe? Lists anything new; held packages and accepted advisories are in aube-workspace.yaml"
 run = ["aube audit", "aube outdated"]
 
 [tasks."deps:update"]
-description = "The app's side, moved: node to the newest 24 (aube runtime set) and every package to npm's latest, exact pins, aube-lock.yaml in the same resolve (aube update --latest --exact); held packages stay. Changes only package.json and aube-lock.yaml; then aube run ci. Stops if a new version lost its build proof (aube trust check)"
+description = "Move the app's packages and node to their newest, as exact pins. Then run aube run ci"
 run = ["aube runtime set node 24 --save-exact", "aube update --latest --exact"]
 
 [tasks."tools:check"]
-description = "The control plane's side, checked: the tools pinned in this file against their newest releases (mise outdated --bump aube); reports, changes nothing"
+description = "Are the tools in mise.toml behind?"
 run = "mise outdated --bump aube"
 
 [tasks."tools:update"]
-description = "The control plane's side, moved: every tool pinned in this file to its newest, exact pins (mise use --pin aube@latest). Changes only mise.toml; then aube run ci"
+description = "Move the tools in mise.toml to their newest, as exact pins. Then run aube run ci"
 run = "mise use --pin aube@latest"
 
 [tasks."cloudflare:login"]
