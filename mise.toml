@@ -30,6 +30,10 @@ jobs = 1
 # (deps:check, deps:update). README, Keeping versions current.
 # Installs the Node packages from package.json and aube-lock.yaml. No npm, no pnpm.
 aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
+# The skills CLI (vercel-labs/skills), as Hallmark's README installs it: mise run hallmark:update.
+"npm:skills" = "1.7.6"
+# Tailscale: mise run all:dev puts the local pair on public https addresses (Funnel), signed in from a browser link.
+tailscale = "1.104.5"
 
 [env]
 # The packages' own binaries (wrangler, vite, biome, playwright) by name.
@@ -50,11 +54,46 @@ run = ["aube runtime set node 24 --save-exact", "aube update --latest --exact"]
 
 [tasks."tools:check"]
 description = "Are the tools in mise.toml behind?"
-run = "mise outdated --bump aube"
+run = "mise outdated --bump aube npm:skills tailscale"
 
 [tasks."tools:update"]
 description = "Move the tools in mise.toml to their newest, as exact pins. Then run aube run ci"
-run = "mise use --pin aube@latest"
+run = "mise use --pin aube@latest npm:skills@latest tailscale@latest"
+
+# Hallmark (README, Hallmark locked to this stack). Each task that designs opens the `claude` already on this machine
+# (Claude Code is the machine's, like mise: this repo never installs it) on the repo, with the request written out,
+# so you watch and approve as it works. Hallmark reads DESIGN.md first, so whatever it builds is a route on this stack.
+[tasks."hallmark:page"]
+usage = '''
+arg "<route>" help="the new page's route, such as /prices"
+arg "<brief>" help="what the page is for and what goes on it, in your words"
+flag "--scope <scope>" help="page (read: marketing gates) or app (worked in: app gates)" default="page" { choices "page" "app" }
+'''
+description = "A new page, designed by Hallmark in this stack: opens claude with /hallmark asking for the route as src/routes/<route>.tsx at its scope, from your brief, inside DESIGN.md (shared header and footer, added to src/lib/pages.ts), then hallmark:lint"
+run = '''
+claude "/hallmark Build a new page. Route: ${usage_route}, as its TanStack route file in src/routes/. Hallmark scope: ${usage_scope}. Brief: ${usage_brief}. DESIGN.md is locked and is the rule, its Pages section first: open with SiteHeader and close with Footer (src/components/site/chrome.tsx), and lead with the page's own real thing on its first screen, and add the route to PAGES and SCOPES in src/lib/pages.ts in the same change. When it is built, run mise run hallmark:lint and fix every finding until it is clean."
+'''
+
+[tasks."hallmark:redesign"]
+usage = 'arg "<path>" help="the route file or folder to redesign, such as src/routes/index.tsx"'
+description = "Hallmark's redesign of what exists, keeping its content and wiring: opens claude with /hallmark redesign <path>, inside DESIGN.md, then hallmark:lint"
+run = '''
+claude "/hallmark redesign ${usage_path}. DESIGN.md is locked and is the rule, its Pages section first. When it is done, run mise run hallmark:lint and fix every finding until it is clean."
+'''
+
+[tasks."hallmark:audit"]
+usage = 'arg "<path>" help="the route file or folder to audit, such as src/routes"'
+description = "Hallmark's audit: opens claude with /hallmark audit <path>, which only reports"
+run = 'claude "/hallmark audit ${usage_path}"'
+
+[tasks."hallmark:lint"]
+description = "Hallmark's own lint on every route, rendered from the production build at Hallmark's widths, each at its scope in src/lib/pages.ts (aube run build, then aube run hallmark); fails on anything but clean"
+run = ["aube run build", "aube run hallmark"]
+
+[tasks."hallmark:update"]
+description = "Hallmark to upstream's newest, the way its README installs it: the skills CLI (pinned above) copies Nutlope/hallmark's skill into .claude/skills/hallmark/ for Claude Code and records it in skills-lock.json (its source and content hash); then hallmark:lint. Upstream has no releases, so the copy in git is the pin, and only this task moves it"
+env = { DISABLE_TELEMETRY = "1" }
+run = ["skills add nutlope/hallmark --skill hallmark --agent claude-code --copy --yes", "mise run hallmark:lint"]
 
 [tasks."cloudflare:login"]
 description = "Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who"
@@ -64,13 +103,25 @@ run = "node scripts/cloudflare-login.mjs"
 description = "End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so"
 run = "node scripts/cloudflare-logout.mjs"
 
+[tasks."tailscale:login"]
+description = "Development on the internet, through Tailscale Funnel on 443: two Tailscale machines from this repo (its own tailscaled for each, state in .tailscale/), courts as hallmark-stack-<host> and Gateweave ID as hallmark-stack-id-<host>; prints each one's sign-in link and waits, then any Funnel approval link and waits, then says where both are (https://<name>.<tailnet>.ts.net); already signed in, it just says where. all:dev runs it (scripts/tailscale.mjs)"
+run = "node scripts/tailscale.mjs up"
+
+[tasks."tailscale:logout"]
+description = "Development off Tailscale: Funnel off and signed out on both machines, this repo's tailscaled stopped and .tailscale/ removed (scripts/tailscale.mjs)"
+run = "node scripts/tailscale.mjs down"
+
+[tasks."all:dev"]
+description = "Development, the same pair as staging and production, on this machine and on the internet: Gateweave ID (pinned, set up by its own dev:setup) and courts, each a Worker in workerd with its own local D1; tailscale:login puts them on https://hallmark-stack-<host>.<tailnet>.ts.net (courts) and https://hallmark-stack-id-<host>.<tailnet>.ts.net (ID) through Tailscale Funnel; courts registered with that ID by app:register's own steps, its settings in .dev.vars; waits until courts' sign-in reaches ID's login page over the internet. Opened from any browser; nothing reaches Cloudflare. A new local ID is claimed once: mise run id:claim development (scripts/dev.mjs)"
+run = "node scripts/dev.mjs"
+
 [tasks."id:deploy"]
 usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
 description = "One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs)"
 run = "node scripts/id-deploy.mjs {{usage.env}}"
 
 [tasks."id:claim"]
-usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+usage = 'arg "<env>" help="staging, production or development" { choices "staging" "production" "development" }'
 description = "Who owns one environment's Gateweave ID: a new server prints its address and waits up to 10 minutes for you to use Create account there in the browser, with the code ID emails you (the first account owns it); the owner must be your Cloudflare login's email, or it stops (scripts/id-claim.mjs)"
 run = "node scripts/id-claim.mjs {{usage.env}}"
 
@@ -80,7 +131,7 @@ description = "One environment's courts onto Cloudflare as courts-<env>, at its 
 run = "node scripts/app-deploy.mjs {{usage.env}}"
 
 [tasks."app:register"]
-usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
+usage = 'arg "<env>" help="staging, production or development" { choices "staging" "production" "development" }'
 description = "One environment's courts registers itself with that environment's Gateweave ID, after id:deploy and app:deploy; its client id and secret go straight into its Worker secrets, never printed; registered only if ID has its client and it has the settings, otherwise it registers again; then proves sign-in reaches ID's login page (scripts/app-register.mjs)"
 depends = ["id:deploy {{usage.env}}", "app:deploy {{usage.env}}"]
 run = "node scripts/app-register.mjs {{usage.env}}"
@@ -92,8 +143,8 @@ depends = ["app:register {{usage.env}}"]
 run = "mise run all:e2e {{usage.env}}"
 
 [tasks."all:e2e"]
-usage = 'arg "<env>" help="staging or production" { choices "staging" "production" }'
-description = "One environment's live courts site through its live Gateweave ID, in Chrome, no human (Playwright, playwright.live.config.ts, e2e/live/): two throwaway people invited into ID sign in, courts keeps none of ID's tokens, a double booking is refused, a cancel frees it, Hallmark's lint passes on the signed-in pages, courts takes the name from ID again at the next sign-in, courts' Sign out leaves ID signed in, signing out at ID ends courts' session; read-only checks that both answer and are paired; then the people are deleted. Staging runs it all; production only the read-only checks: nobody made, nothing booked"
+usage = 'arg "<env>" help="staging, production or development" { choices "staging" "production" "development" }'
+description = "One environment's live courts site through its live Gateweave ID, in Chrome, no human (Playwright, playwright.live.config.ts, e2e/live/): two throwaway people invited into ID sign in, courts keeps none of ID's tokens, a double booking is refused, a cancel frees it, Hallmark's lint passes on the signed-in pages, courts takes the name from ID again at the next sign-in, courts' Sign out leaves ID signed in, signing out at ID ends courts' session; read-only checks that both answer and are paired; then the people are deleted. Staging runs it all; production only the read-only checks: nobody made, nothing booked; development all of it, against mise run all:dev on this machine"
 run = "aube exec playwright test --config playwright.live.config.ts --project {{usage.env}}"
 
 [tasks."app:undeploy"]

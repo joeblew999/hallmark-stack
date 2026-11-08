@@ -25,3 +25,6 @@ worker-configuration.d.ts
 
 # Gateweave ID, fetched at its pinned release by mise run id:deploy
 vendor/
+
+# Tailscale for mise run all:dev: this machine's sign-in and state, never committed
+.tailscale/

@@ -15,6 +15,31 @@ Pages are TanStack Start routes in `src/routes/` (React 19), styled with Tailwin
 tokens; shadcn/ui components (`components.json`) take the same tokens through the variables in `src/styles.css`.
 Never a standalone `.html` page: a new page is a route, a new part is a component in `src/components/`.
 
+## Pages
+
+The site is many pages, never one page of sections. Each page has one job, says it in its first screen, and does it;
+nothing from another page is repeated on it beyond a link.
+
+- **The list is `src/lib/pages.ts`.** `PAGES` is the nav (route, label, one-line job, scope); `SCOPES` gives every
+  route its scope, including the ones outside the nav (`/bookings`, `/login`). A new page is a route in `src/routes/`
+  and an entry here, in the same change: the header and footer are drawn from `PAGES`, and Hallmark's lint
+  (`e2e/hallmark.spec.ts`) fails on a route with no scope.
+- **Scope is Hallmark's** (`references/flow.md`): `page` is read, so the marketing gates bind (shape, hero, fold,
+  section rhythm); `app` is worked in (the booker, your bookings, sign-in), so the app gates bind (density, states,
+  32 to 40px controls) and the page shape steps aside.
+- **The chrome is shared, never redrawn.** Every page opens with `SiteHeader` and closes with `Footer`
+  (`src/components/site/chrome.tsx`). The nav marks the current page with `aria-current="page"`.
+- **Each page leads with its own real thing** on its first screen, at a posture from Hallmark's `layout.md` § 6, its
+  `h1` the page's one head (never a copy-only head over the same thing said again): Courts leads with the site plan and
+  Coaching with the week (Index), Visit with the pitch beside the hours and address (Stage), Book with the booker.
+  Pages share the theme, type and accent, and differ only in shape.
+- **The home page is the front door**, not the whole site: what Eastfield is, and the way to each page in `PAGES`,
+  each with its job. Booking is the Book page's.
+- **Links carry state between pages in the URL:** a court picked on the site plan or Free today opens `/book` with
+  `?date=&hour=&court=`, which the Book page reads.
+- **Data a page shows comes from its route's loader** (TanStack Start server functions in `src/lib/`), never from
+  another page.
+
 ## Tokens
 
 `src/styles/tokens.css` is the source of truth, in Tailwind's `@theme static` (colours, faces, sizes, tracking, radii,

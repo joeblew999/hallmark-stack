@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import handler from "@tanstack/react-start/server-entry";
 import { handleAuthRequest, postToAuth } from "./server/auth";
+import { signIn, signOut } from "./server/auth/sign-in-out";
 import { days, venue } from "./server/venue";
 
 export { RateLimiter } from "./server/rate-limit";
@@ -25,6 +26,9 @@ export default {
 		if (url.pathname.startsWith("/api/auth/")) {
 			return request.method === "POST" ? postToAuth(request) : handleAuthRequest(request);
 		}
+		// Sign in and out without the page's script (src/server/auth/sign-in-out.ts).
+		if (url.pathname === "/sign-in" && request.method === "GET") return signIn(request);
+		if (url.pathname === "/sign-out" && request.method === "POST") return signOut(request);
 		return handler.fetch(request);
 	},
 	// Daily: bookings older than a month go.

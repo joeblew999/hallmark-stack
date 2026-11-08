@@ -31,16 +31,21 @@ export function useBooking(): Booking {
 export function BookingProvider({
 	days,
 	taken,
+	initial,
 	children,
 }: {
 	days: Day[];
 	taken: Taken;
+	/** What a link to the Book page picked: a day, an hour, a court (the site plan, Free today). */
+	initial?: { date?: string; hour?: Hour; court?: string };
 	children: ReactNode;
 }) {
 	const first = days[0] as Day;
-	const [date, setDate] = useState(first.date);
-	const [hour, setHourState] = useState<Hour>("19:00");
-	const [courtId, setCourtId] = useState<string | undefined>(undefined);
+	const [date, setDate] = useState(
+		days.some((d) => d.date === initial?.date) ? (initial?.date as string) : first.date,
+	);
+	const [hour, setHourState] = useState<Hour>(initial?.hour ?? "19:00");
+	const [courtId, setCourtId] = useState<string | undefined>(initial?.court);
 
 	const value = useMemo<Booking>(() => {
 		const day = days.find((d) => d.date === date) ?? first;

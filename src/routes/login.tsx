@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { SignInButton } from "#/components/site/account";
-import { PlainNav } from "#/components/site/chrome";
+import { Footer, SiteHeader } from "#/components/site/chrome";
 import { signInOptions } from "#/lib/bookings";
 import { signInRefusal } from "#/lib/sign-in-refusal";
 
@@ -22,13 +22,7 @@ function Login() {
 
 	return (
 		<>
-			<PlainNav
-				action={
-					<Link className="link nav__book" to="/">
-						Back to the booker
-					</Link>
-				}
-			/>
+			<SiteHeader signedIn={false} />
 			<main id="main" className="auth">
 				<div className="container auth__grid">
 					<div className="auth__head">
@@ -47,12 +41,13 @@ function Login() {
 						)}
 						{provider && (
 							<div className="auth__provider">
-								<SignInButton next="/#book" />
+								<SignInButton next="/book" />
 							</div>
 						)}
 					</div>
 				</div>
 			</main>
+			<Footer />
 		</>
 	);
 }

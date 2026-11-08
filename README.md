@@ -52,31 +52,44 @@ the root, not a workspace; one `aube run ci` that GitHub runs exactly, instead o
 
 ## Hallmark, locked to this stack
 
-Hallmark's pre-flight reads a project before it designs. Four things here make every later Hallmark run build in
+Hallmark's pre-flight reads a project before it designs. Five things here make every later Hallmark run build in
 this stack, on this design, instead of writing standalone HTML:
 
 1. **`DESIGN.md`**: Hallmark's locked-system file. With it present, Hallmark skips its theme deal and works inside
-   the system: the Grid theme, its tokens, its controls, and the rule that a page is a route in `src/routes/` and a
-   part is a component in `src/components/`.
+   the system: the Grid theme, its tokens, its controls, the rule that a page is a route in `src/routes/` and a
+   part is a component in `src/components/`, and its Pages section: the site is many pages, each with one job,
+   leading with its own real thing, sharing one header and footer.
 2. **`src/styles/tokens.css`**: Hallmark's tokens in Tailwind 4's `@theme static` (as Hallmark's
    `references/export-formats.md` says), so they are utilities and variables; `src/styles.css` maps shadcn/ui's
    variables onto them and carries Hallmark's stamp in its first lines.
 3. **`package.json`, `components.json`, `.hallmark/preflight.json`**: what the pre-flight reads to know the framework.
-4. **`.claude/skills/hallmark/`**: Hallmark v2.0.0, pinned at upstream commit `407fa68` (MIT). Claude Code loads it
-   as a project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time
-   lint on every CSS change, and `e2e/hallmark.spec.ts` runs its full lint on the rendered production build in every Playwright run, so in CI too (`aube run hallmark` runs just that spec).
+4. **`src/lib/pages.ts`**: the site's pages. `PAGES` draws the nav and the footer on every page; `SCOPES` gives
+   every route its Hallmark scope (`page` is read, `app` is worked in), and Hallmark's lint fails on a route with none.
+5. **`.claude/skills/hallmark/`**: Hallmark v2.0.0 (MIT), installed the way its README says, by the `skills` CLI
+   (pinned in `mise.toml`), which records its source and content hash in `skills-lock.json`. Upstream has no
+   releases, so the copy in git is the pin, and only `mise run hallmark:update` moves it. Claude Code loads it as a
+   project skill when the repo is opened: no plugin, nothing global. `.claude/settings.json` runs its edit-time lint
+   on every CSS change, and `e2e/hallmark.spec.ts` runs its full lint on every route of the rendered production
+   build in every Playwright run, so in CI too.
+
+**Using Hallmark is mise tasks** (`docs/commands.md`): `mise run hallmark:page <route> "<brief>"` for a new page,
+`hallmark:redesign <path>`, `hallmark:audit <path>`, `hallmark:lint`, `hallmark:update`. The designing ones open the
+`claude` already on your machine (Claude Code is the machine's, like mise; this repo never installs it) with the
+request written out: the route, its scope, your brief and DESIGN.md's rules, so you watch and approve as it works.
 
 ## Gateweave ID: the only way in
 
 [gateweavehq/id](https://github.com/gateweavehq/id) is Gateweave's OpenID Connect provider: one account for all our
-apps, on its own Worker, on the same stack. It runs on Cloudflare only. **It is the only way into courts** (issue #3):
+apps, on its own Worker, on the same stack: on Cloudflare for staging and production, and on your machine for
+development (Running it locally, below). **It is the only way into courts** (issue #3):
 making an account, signing in and out, details, password, two-factor, passkeys and deleting the account are all ID's
 own pages. Courts has no passwords, no sign-up and no login form.
 
 - **Sign in:** "Sign in" (the header, or booking while signed out) goes to ID and comes back signed in. ID's own page
   offers making an account too, and comes back the same way. A refused sign-in comes back to `/login`, which says why
-  in words of ours (`src/lib/sign-in-refusal.ts`). The button can't be pressed before the page's script has loaded
-  (`src/components/site/live-button.tsx`): a press that early would do nothing.
+  in words of ours (`src/lib/sign-in-refusal.ts`). "Sign in" is a plain link to courts' `GET /sign-in?next=<path>` and
+  "Sign out" a plain form posting to `/sign-out` (`src/server/auth/sign-in-out.ts`), each calling Better Auth's own
+  endpoint on the server, so the first press works before the page's script has loaded, like every other link.
 - **What courts keeps:** who someone is, keyed by ID's id for them (`sub`), so bookings know whose they are, with
   their name and email taken from ID at every sign-in; and its own short session. If ID is down, people already signed
   in carry on; only new sign-ins wait. None of ID's tokens are kept.
@@ -95,13 +108,13 @@ own pages. Courts has no passwords, no sign-up and no login form.
 Gateweave copies these between its own products, "owned here now, the way shadcn/ui components are", ID's
 `AGENTS.md`). Each file says at the top what it came from at `b8b5ba0`, and what changed:
 
-| Here                                                                | From Track's `apps/web/`                                       | What it does                                                                                           |
-| ------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `src/server/auth/oidc-sign-in.ts`                                   | `src/server/auth/oidc-sign-in.ts`                              | Sign-in through ID; back-channel logout; which ID session each session came from                       |
-| `src/server/auth/config.ts`, `index.ts`                             | `src/server/auth/config.ts`, `index.ts`                        | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting   |
-| `src/server/auth/workers-address.ts`                                | `src/server/auth/workers-address.ts`                           | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too     |
-| `src/server/rate-limit/`                                            | `src/server/rate-limit/` (the sign-in part)                    | Limits that hold across every isolate, in one Durable Object for every client, not one per client (#5) |
-| `src/components/site/live-button.tsx`, `src/lib/sign-in-refusal.ts` | `src/components/live-button.tsx`, `src/lib/sign-in-refusal.ts` | The button that waits for the script; refusals in words of ours                                        |
+| Here                                    | From Track's `apps/web/`                    | What it does                                                                                           |
+| --------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `src/server/auth/oidc-sign-in.ts`       | `src/server/auth/oidc-sign-in.ts`           | Sign-in through ID; back-channel logout; which ID session each session came from                       |
+| `src/server/auth/config.ts`, `index.ts` | `src/server/auth/config.ts`, `index.ts`     | The rate limit on, telemetry off, the client's address; a logout seen through after ID stops waiting   |
+| `src/server/auth/workers-address.ts`    | `src/server/auth/workers-address.ts`        | Counts a Worker by its zone: every Worker on Cloudflare arrives from one address, ID's logouts too     |
+| `src/server/rate-limit/`                | `src/server/rate-limit/` (the sign-in part) | Limits that hold across every isolate, in one Durable Object for every client, not one per client (#5) |
+| `src/lib/sign-in-refusal.ts`            | `src/lib/sign-in-refusal.ts`                | Refusals in words of ours; plus `unavailable`, from courts' own `/sign-in`                             |
 
 **Not copied, because they exist for Track's own accounts or its other parts:** passwords, email verification and
 password reset (ID's), account linking, GitHub, workspaces, agents and MCP, the demo,
@@ -188,8 +201,10 @@ carries on.
   (`src/server/auth/`, `migrations/`); see Gateweave ID, above.
 - **Bookings** belong to one `VenueDO` per venue (`src/server/venue-do.ts`). A unique index on court, date and hour
   makes a double booking impossible: the second one is refused and the page says someone took it.
-- **The page** (`src/routes/index.tsx`, `src/components/site/`) loads the taken courts for four days with a server
-  function, and books, lists and cancels with others (`src/lib/bookings.ts`).
+- **The pages** (`src/routes/`, `src/components/site/`, listed in `src/lib/pages.ts`): Home, Book, Courts, Coaching
+  and Visit, then Your bookings and Sign in. Each loads what it shows with a server function: the taken courts for
+  four days, booking, listing and cancelling (`src/lib/bookings.ts`). A court picked on the site plan or Free today
+  opens Book with it picked (`?date=&hour=&court=`).
 - **Courts** have opaque UUIDs (`src/lib/courts.ts`), never names, so renaming one can't touch a booking.
 - **A daily cron** deletes bookings older than a month.
 
@@ -199,11 +214,50 @@ carries on.
 for the end-to-end tests and Hallmark's lint. Then:
 
 ```sh
-mise install            # node (package.json devEngines.runtime) and aube (mise.toml)
+mise install            # node (package.json devEngines.runtime), aube and the skills CLI (mise.toml)
 aube install            # the packages, from aube-lock.yaml
-aube run dev:setup      # .dev.vars with a random secret; the local D1 migrated
-aube run dev            # http://localhost:4710
+mise run all:dev        # Gateweave ID on http://localhost:4730 and courts on http://localhost:4710, signed in together
 ```
+
+### Running it locally
+
+Development is the same pair as staging and production, on your machine, and on the internet so any browser can
+open it, sign-in included: `mise run all:dev` (`scripts/dev.mjs`), the same on a Mac and in a Claude cloud session.
+Nothing reaches Cloudflare. Each Worker runs in workerd through Cloudflare's Vite plugin, with its own local D1 and
+Durable Objects in its own `.wrangler/state`.
+
+- **On the internet through Tailscale Funnel** (`scripts/tailscale.mjs`, `mise run tailscale:login`, pinned in
+  `mise.toml`): two Tailscale machines from this repo, each published on 443: courts as
+  `https://hallmark-stack-<host>.<tailnet>.ts.net`, Gateweave ID as `https://hallmark-stack-id-<host>.<tailnet>.ts.net`.
+  Both on 443 because a Claude cloud session lets encrypted traffic out on 443 only, and courts' Worker must reach ID
+  (as on Cloudflare). This repo runs its own `tailscaled` for each, without root (userspace networking), its state in
+  the git-ignored `.tailscale/`; it never touches a Tailscale app the machine runs. The first time on a machine, each
+  prints Tailscale's sign-in link and waits; Funnel's one-time approval is a link too. `mise run tailscale:logout`
+  takes it all off. Cloudflare's own tunnel was tried first: its connection to Cloudflare is on port 7844, which a
+  cloud session can't reach; free ngrok can't use the session's proxy.
+- **Live reload behind Funnel:** the browser reaches each dev server on 443, so each one's live reload is told to use
+  443 (Vite's `hmr.clientPort`): courts in `vite.config.ts` (`DEV_HMR_CLIENT_PORT`), Gateweave ID through
+  `scripts/id-vite.config.mjs`, which imports ID's own Vite config unchanged and adds only that. Without it pages
+  reload themselves over and over. Each server answers on its Funnel name through Vite's
+  `__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS`. A dev server sends hundreds of separate files through the tunnel, so the
+  first load takes some seconds; staging and production serve built bundles.
+
+- **The same scripts as Cloudflare.** `development` is a third environment in `scripts/environments.mjs`, which says
+  where each environment is (`LOCAL`): only the addresses (`localhost`), `--local` for D1, and `.dev.vars` for
+  secrets change. `app:register`, `id:claim` and the live suite take it like staging: `mise run app:register
+  development`, `mise run id:claim development`, `mise run all:e2e development`.
+- **Gateweave ID** is its pinned release, set up by its own `dev:setup` (ID's README, "Running it locally"): its
+  OIDC provider on at `http://localhost:4730`, email on but never sent (each email is a file under
+  `vendor/gateweave-id/apps/web/.wrangler/tmp/email`).
+- **Each side's address:** ID's `BETTER_AUTH_URL` (its issuer) and courts' (`vars` in `wrangler.jsonc`'s top level,
+  empty, overridden in `.dev.vars`) are set to their Funnel addresses on every run.
+- **courts** is registered with it by app:register's own steps, its client id and secret in courts' `.dev.vars`,
+  which `wrangler.jsonc`'s top level declares (`secrets.required`): with `secrets` set, Wrangler loads only the
+  declared names from `.dev.vars`. Registered means for the current addresses: when they change, it registers again.
+- **A new local ID is claimed by you,** as on Cloudflare: `all:dev` runs `id:claim development`, which prints ID's
+  address and waits for your Create account there. The local ID sends no email, so the code it would send is printed
+  for you; on staging and production it comes to your inbox.
+- **`aube run dev`** still runs courts alone, signed out if no ID answers.
 
 Every command is in [docs/commands.md](docs/commands.md), generated from `mise.toml` and `package.json`. `aube run ci` is everything
 GitHub's CI runs, and the same here.
@@ -249,5 +303,5 @@ Two things to keep current, each with a check and an update, and neither update 
 
 ## Updating Hallmark
 
-The pinned copy is upstream's `skills/hallmark/` folder. To move to a newer version, copy that folder from a newer
-`Nutlope/hallmark` commit over `.claude/skills/hallmark/`, update the commit above, and run `aube run hallmark`.
+`mise run hallmark:update`: the `skills` CLI copies upstream's newest `skills/hallmark/` into `.claude/skills/hallmark/`
+and updates `skills-lock.json`, then `hallmark:lint` runs on every route. Commit both. Never edit the copy by hand.

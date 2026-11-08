@@ -9,6 +9,7 @@
 		"includes": [
 			"**",
 			"!aube-lock.yaml",
+			"!skills-lock.json",
 			"!**/routeTree.gen.ts",
 			"!**/worker-configuration.d.ts",
 			"!**/migrations/meta",
