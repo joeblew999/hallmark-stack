@@ -15,7 +15,7 @@ Every command is listed in [docs/commands.md](docs/commands.md). That file is ge
 You need [mise](https://mise.jdx.dev/getting-started.html) (`brew install mise`) and Google Chrome. Then:
 
 ```sh
-mise install       # installs node, aube, the skills CLI and Tailscale, at the versions this repo pins
+mise install       # installs node, aube, the skills CLI, Pitchfork and Tailscale, at the versions this repo pins
 aube install       # installs the app's packages
 mise run all:dev   # runs the site and Gateweave ID on this machine
 ```
@@ -26,6 +26,17 @@ The same commands work on a Mac and in a Claude cloud session.
 
 `mise run all:dev` runs the same two parts as staging and production, on your machine: Gateweave ID and the site.
 Nothing goes to Cloudflare. Each has its own local database.
+
+The two dev servers run in the background as mise daemons (`[daemons]` in `mise.toml`, run by Pitchfork). `all:dev`
+starts them, waits until both answer, and then ends. They keep running:
+
+```sh
+mise daemons status        # are they running
+mise daemons logs courts   # what the site's server printed (or: logs id)
+mise daemons stop          # stop both
+```
+
+Running `mise run all:dev` again restarts them with the current settings.
 
 Both are put on public https addresses through Tailscale Funnel, so you can open them in any browser, including your
 phone, and sign-in works:
@@ -52,6 +63,19 @@ Things worth knowing:
   tunnel. Staging and production are fast.
 - `aube run dev` runs the site alone, signed out.
 
+## Seeing what ran
+
+mise records every task you run, on the Mac and in a cloud session alike:
+
+```sh
+mise tasks history                  # every run: when, how long, which environment, passed or failed
+mise tasks log all:e2e              # everything the last run of a task printed
+mise tasks log all:e2e --path       # where that is kept
+```
+
+These are mise's own (`task.logs` and `task.history_limit` in `mise.toml`). Claude uses the same commands; it runs no
+wrappers or log files of its own.
+
 ## Deploying
 
 There are two environments, staging and production. Each has its own Workers, databases and secrets, so staging can be
@@ -69,7 +93,7 @@ Cloudflare account: `gedw99@gmail.com`.
 ```sh
 mise run all:deploy staging     # deploys ID, then the site, connects them, then tests them
 mise run all:deploy production  # the same; its tests only read, they book nothing
-mise run all:undeploy staging   # removes everything; its accounts and bookings are lost
+mise run all:undeploy staging   # removes everything; asks first, as its accounts and bookings are lost
 ```
 
 Every deploy task needs the environment named. There is no default, so production is only deployed when you ask for it.
@@ -179,7 +203,7 @@ Each thing has a check (reads only) and an update (changes the files). Run `aube
 ## The stack
 
 TanStack Start · React 19 · Tailwind CSS 4 · shadcn/ui · Better Auth · Drizzle ORM · Cloudflare Workers, Durable
-Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tools: mise, aube, Tailscale, Hallmark.
+Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tools: mise, aube, Pitchfork, Tailscale, Hallmark.
 
 It's the stack of [Gateweave's products](https://github.com/orgs/gateweavehq/repositories), taken from
 [gateweavehq/track](https://github.com/gateweavehq/track): the same libraries, at the same versions, wired the same

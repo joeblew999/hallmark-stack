@@ -25,15 +25,15 @@ current. From `mise.toml`.
 | `mise run cloudflare:logout` | Logs this repo out of Cloudflare |
 | `mise run tailscale:login` | Puts the local site and Gateweave ID on public https addresses through Tailscale. Prints sign-in links, then waits |
 | `mise run tailscale:logout` | Takes the local site off Tailscale. The machines stay in your Tailscale list until you remove them there |
-| `mise run all:dev` | Runs Gateweave ID and the site on this machine, on public addresses, signed in together |
+| `mise run all:dev` | Starts Gateweave ID and the site on this machine, on public addresses, signed in together. They keep running: mise daemons logs, mise daemons stop |
 | `mise run id:deploy <env>` | Deploys Gateweave ID to staging or production |
 | `mise run id:claim <env>` | Makes you the owner of a new Gateweave ID. Prints its address and waits for you to create your account |
 | `mise run app:deploy <env>` | Deploys the site to staging or production |
 | `mise run app:register <env>` | Connects the site to its Gateweave ID so people can sign in. Runs both deploys first |
 | `mise run all:deploy <env>` | Deploys Gateweave ID and the site, connects them, then tests them |
 | `mise run all:e2e <env>` | Tests the running site end to end in Chrome: sign in, book, cancel, sign out. Production only reads |
-| `mise run app:undeploy <env>` | Removes the site from staging or production. Its bookings are lost |
-| `mise run id:undeploy <env>` | Removes Gateweave ID from staging or production. Its accounts are lost |
+| `mise run app:undeploy <env>` | Removes the site from staging or production. Asks first: its bookings are lost |
+| `mise run id:undeploy <env>` | Removes Gateweave ID from staging or production. Asks first: its accounts are lost |
 | `mise run all:undeploy <env>` | Removes the site, then Gateweave ID |
 
 ## The app's scripts
