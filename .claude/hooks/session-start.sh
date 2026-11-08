@@ -13,7 +13,6 @@ export PATH="$HOME/.local/bin:$PATH"
 command -v mise > /dev/null || curl -fsSL https://mise.run | MISE_SELF_UPDATE_MINIMUM_RELEASE_AGE=0s sh
 cd "$CLAUDE_PROJECT_DIR"
 mise trust -q
-mise run setup
 [ -z "${CLAUDE_ENV_FILE:-}" ] || {
   echo "export PATH=\"$HOME/.local/bin:\$PATH\""
   echo 'eval "$(mise activate bash --shims)"'
