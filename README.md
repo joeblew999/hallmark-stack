@@ -24,8 +24,7 @@ mise installs the app's packages itself, before any task, whenever `package.json
 (`[deps.aube]` in `mise.toml`). Nobody runs `aube install`.
 
 The same commands work on a Mac and in a Claude cloud session. A cloud session runs
-`.claude/hooks/session-start.sh` when it starts, which installs mise and runs `mise run setup`, so it begins where a
-developer's machine is after `mise run setup`.
+`.claude/hooks/session-start.sh` when it starts, which installs mise. It does not run `mise run setup`.
 
 ## Running it locally
 
