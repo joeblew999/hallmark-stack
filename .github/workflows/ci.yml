@@ -1,36 +1,32 @@
+# Written by `mise generate github-action --task test --name CI`, with the branch set to main, a longer timeout, and
+# the Playwright report kept when a test fails. It runs `mise run test`, the same command as on your machine.
 name: CI
 
-# One command, the same here and on your machine: `aube run ci` (lint, typecheck, unit and workerd tests, build,
-# end-to-end tests in Chrome, Hallmark's lint of the rendered page). mise installs the pinned node and aube.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
   pull_request:
+  push:
+    tags: ["*"]
+    branches: ["main"]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  ci:
+  CI:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       CI: "true"
     steps:
-      - uses: actions/checkout@v5
-      - name: Install mise
-        run: curl -fsSL https://mise.run | sh && echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Install the pinned tools (node, aube)
-        run: mise trust --yes && mise install
-      - name: Install the packages
-        run: mise exec -- aube install --frozen-lockfile
-      - name: aube run ci
-        run: mise exec -- aube run ci
-      - name: Upload the Playwright report
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: mise run test
+      - name: Keep the Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
         with:

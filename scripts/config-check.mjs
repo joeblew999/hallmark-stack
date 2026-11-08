@@ -1,4 +1,4 @@
-// aube run config:check, in aube run ci: every deployable environment's config is whole, before anything is built or
+// aube run config:check, in mise run test: every deployable environment's config is whole, before anything is built or
 // deployed. Wrangler doesn't inherit bindings, vars or secrets into an environment, and a block missing one only
 // warns, so this reads each environment back as Wrangler will (unstable_readConfig, no build, no login) and says
 // exactly what is missing. courts: wrangler.jsonc. Gateweave ID: our values in id.jsonc (scripts/id-deploy.mjs writes

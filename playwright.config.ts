@@ -16,7 +16,7 @@ export default defineConfig({
 	// Google Chrome as installed (macOS, GitHub's Ubuntu runners), so no browser download is needed.
 	projects: [{ name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } }],
 	webServer: {
-		// The build is `aube run build`, which `aube run ci` runs first; this only serves it, with the suite's own vars
+		// The build is `aube run build`, which `mise run test` runs first; this only serves it, with the suite's own vars
 		// (scripts/e2e-vars.mjs: no Gateweave ID), and the local D1 migrated (dev:setup).
 		command: `node scripts/dev-setup.mjs && node scripts/e2e-vars.mjs && vite preview --port ${PORT} --strictPort`,
 		url: `http://localhost:${PORT}/login`,

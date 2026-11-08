@@ -4,31 +4,21 @@
 // site running here, on a Mac or in a cloud session alike, is opened in any browser with sign-in working. Nothing here
 // reaches Cloudflare.
 //
-// Each step is what that project documents for itself, and the registration is the one app:register does on
-// Cloudflare (scripts/app-register.mjs):
-//   1. ID's pinned release (fetchId), set up by ID's own `dev:setup` (its README, "Running it locally"): .dev.vars with
-//      fresh secrets, its OIDC provider on, email on but never sent (each email is a file under
-//      vendor/gateweave-id/apps/web/.wrangler/tmp/email; ID prints its path), its local D1 migrated. Then courts' own
-//      `dev:setup`: .dev.vars with a random BETTER_AUTH_SECRET, its local D1 migrated.
-//   2. Tailscale (tailscale:login's steps): two machines signed in, one per Worker, each with Funnel on 443, each a
-//      browser link that is waited for: courts on https://hallmark-stack-<host>.<tailnet>.ts.net, ID on
-//      https://hallmark-stack-id-<host>.<tailnet>.ts.net (.tailscale/origins.json), development's addresses from then
-//      on (scripts/environments.mjs).
-//   3. Each side's own address in its .dev.vars, BETTER_AUTH_URL: ID's is its issuer (ID's .dev.vars.example: "its
-//      origin is the issuer"), courts' its callback base.
-//   4. app:register's register(): courts' client in ID's local D1 for courts' address, its settings in courts'
-//      .dev.vars. Before courts starts, so it starts with them.
-//   5. Both on their LOCAL ports, output prefixed [id] and [courts], each allowed to answer on their Funnel names
-//      (Vite's __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS), each with its own `dev` and live reload on Funnel's 443 (ID's
-//      own Vite config through scripts/id-vite.config.mjs, never edited);
-//      then app:register's prove(), over the internet: courts' sign-in reaches ID's login page. Ctrl-C stops both.
-//
+//   1. ID's pinned release (fetchId), set up by ID's own `dev:setup` (its README, "Running it locally"); then courts'
+//      own `dev:setup`. Each writes its .dev.vars and migrates its local D1.
+//   2. Tailscale (tailscale:login's steps): both on public https addresses (.tailscale/origins.json).
+//   3. Each side's own address in its .dev.vars (BETTER_AUTH_URL).
+//   4. app:register's register(): courts' client in ID's local D1 for courts' address, its settings in courts' .dev.vars.
+//   5. Both dev servers (re)started as mise daemons, [daemons.id] and [daemons.courts] in mise.toml, so they run in the
+//      background and pick up step 3 and 4's settings; mise waits until each answers. Then app:register's prove():
+//      courts' sign-in reaches ID's login page over the internet.
 //   6. id:claim's steps for development: a new local ID waits for you to Create account, its code printed here.
-// Both .dev.vars and .tailscale/ are git-ignored and never leave the machine (README, Secrets).
-import { execFileSync, spawn } from "node:child_process";
+// This command then ends; the servers keep running. mise daemons logs id / courts shows their output, mise daemons stop
+// stops them. Both .dev.vars and .tailscale/ are git-ignored and never leave the machine (README, Secrets).
+import { execFileSync } from "node:child_process";
 import { delimiter, join, resolve } from "node:path";
 import { prove, register, setDevVars } from "./app-register.mjs";
-import { chooseEnvironment, DEVELOPMENT, LOCAL } from "./environments.mjs";
+import { chooseEnvironment, DEVELOPMENT } from "./environments.mjs";
 import { fetchId, ID_ROOT, ID_WEB } from "./id-release.mjs";
 import { tailscaleUp } from "./tailscale.mjs";
 
@@ -56,68 +46,16 @@ setDevVars(".dev.vars", { BETTER_AUTH_URL: origins.app });
 // 4. courts registered with this ID, for courts' address.
 await register(env);
 
-// 5. Both, side by side.
-const children = [];
-function run(name, args, options = {}) {
-	const child = spawn("vite", args, {
-		...options,
-		env: {
-			...(options.env ?? process.env),
-			__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: origins.hosts.join(","),
-		},
-		stdio: ["ignore", "pipe", "pipe"],
-	});
-	for (const stream of [child.stdout, child.stderr]) {
-		let rest = "";
-		stream.on("data", (chunk) => {
-			const lines = (rest + chunk).split("\n");
-			rest = lines.pop() ?? "";
-			for (const line of lines) console.log(`[${name}] ${line}`);
-		});
-	}
-	child.on("exit", (code) => {
-		console.log(`[${name}] stopped (${code ?? "signal"})`);
-		stop(code ?? 0);
-	});
-	children.push(child);
-}
-function stop(code) {
-	for (const child of children) if (child.exitCode === null) child.kill("SIGTERM");
-	process.exitCode ||= code;
-}
-process.on("SIGINT", () => stop(0));
-process.on("SIGTERM", () => stop(0));
+// 5. Both servers, as mise daemons, restarted so they read the settings above; mise waits until each is ready.
+execFileSync("mise", ["daemons", "restart"], { stdio: "inherit" });
+await prove(env);
 
-// Each with its own `dev` on its LOCAL port, live reload on Funnel's 443: ID's through scripts/id-vite.config.mjs (its
-// own Vite config, unchanged, plus that one setting), courts' through its vite.config.ts (DEV_HMR_CLIENT_PORT).
-run(
-	"id",
-	[
-		"dev",
-		"--config",
-		resolve("scripts/id-vite.config.mjs"),
-		"--port",
-		new URL(LOCAL.id).port,
-		"--strictPort",
-	],
-	{ cwd: ID_WEB, env: { ...idEnv, DEV_HMR_CLIENT_PORT: "443" } },
-);
-run("courts", ["dev", "--port", new URL(LOCAL.app).port, "--strictPort"], {
-	env: { ...process.env, DEV_HMR_CLIENT_PORT: "443" },
-});
+// 6. A new local ID is claimed by you, as id:deploy has id:claim do on Cloudflare.
+execFileSync("node", ["scripts/id-claim.mjs", DEVELOPMENT], { stdio: "inherit" });
 
-try {
-	await prove(env);
-	// A new local ID is claimed by you, as id:deploy has id:claim do on Cloudflare: it waits for your Create account.
-	// Not execFileSync: this process keeps relaying both servers' output while it waits.
-	const claimed = await new Promise((done) =>
-		spawn("node", ["scripts/id-claim.mjs", DEVELOPMENT], { stdio: "inherit" }).on("exit", done),
-	);
-	if (claimed !== 0) throw new Error("Gateweave ID wasn't claimed (mise run id:claim development)");
-	console.log(
-		`\nDevelopment is up, from any browser:\n  courts        ${origins.app}\n  Gateweave ID  ${origins.id}\nCtrl-C stops both.\n`,
-	);
-} catch (error) {
-	console.error(error.message);
-	stop(1);
-}
+console.log(`
+Development is up, from any browser:
+  courts        ${origins.app}
+  Gateweave ID  ${origins.id}
+They keep running. Their output: mise daemons logs id, mise daemons logs courts. Stop them: mise daemons stop.
+`);
