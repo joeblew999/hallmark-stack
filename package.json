@@ -17,7 +17,7 @@
 		"test": "vitest run",
 		"test:e2e": "playwright test",
 		"hallmark": "playwright test e2e/hallmark.spec.ts",
-		"auth:schema": "aube dlx auth@1.7.18 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes",
+		"auth:schema": "auth generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"dev:setup": "node scripts/dev-setup.mjs",
