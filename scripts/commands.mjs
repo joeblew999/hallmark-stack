@@ -30,8 +30,8 @@ const tasks = [...readFileSync("mise.toml", "utf8").matchAll(/^\[tasks\."([^"]+)
 );
 const doc = `# Commands
 
-Generated from \`mise.toml\` and \`package.json\` by \`aube run commands\`; don't edit by hand. Tools are pinned in \`mise.toml\`
-(\`mise install\`), packages installed with \`aube install\`. With mise activated in your shell, \`aube\` is on the
+Generated from \`mise.toml\` and \`package.json\` by \`aube run commands\`; don't edit by hand. Tools are pinned in \`mise.toml\`, node in
+\`package.json\` (\`devEngines.runtime\`), both installed by \`mise install\`; packages installed with \`aube install\`. With mise activated in your shell, \`aube\` is on the
 path; otherwise prefix \`mise exec --\`.
 
 ## mise: the control plane

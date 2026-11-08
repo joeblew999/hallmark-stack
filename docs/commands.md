@@ -1,7 +1,7 @@
 # Commands
 
-Generated from `mise.toml` and `package.json` by `aube run commands`; don't edit by hand. Tools are pinned in `mise.toml`
-(`mise install`), packages installed with `aube install`. With mise activated in your shell, `aube` is on the
+Generated from `mise.toml` and `package.json` by `aube run commands`; don't edit by hand. Tools are pinned in `mise.toml`, node in
+`package.json` (`devEngines.runtime`), both installed by `mise install`; packages installed with `aube install`. With mise activated in your shell, `aube` is on the
 path; otherwise prefix `mise exec --`.
 
 ## mise: the control plane
@@ -12,8 +12,8 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | --- | --- |
 | `mise run deps:outdated` | Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which |
 | `mise run deps:audit` | Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in |
-| `mise run deps:update` | Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). The auth:schema script's auth@ pin moves by hand |
-| `mise run tools:update` | This file's own tools to their newest, as exact pins: node within 24 (Track pins Node 24), aube to its latest (mise use --pin); then aube run ci proves it. `mise outdated --bump` shows what is newer, a Node major included |
+| `mise run deps:update` | Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). Packages held on purpose (puppeteer-core: README, Provenance and pins) are listed in aube-workspace.yaml and not moved. The auth:schema script's auth@ pin moves by hand |
+| `mise run tools:update` | node within 24 (Track pins Node 24) in package.json's devEngines.runtime (aube runtime set), and aube to its latest in this file (mise use --pin), as exact pins; then aube run ci proves it. `mise outdated --bump` shows what is newer |
 | `mise run cloudflare:login` | Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who |
 | `mise run cloudflare:logout` | End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so |
 | `mise run id:deploy <env>` | One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs) |

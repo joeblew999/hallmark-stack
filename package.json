@@ -82,5 +82,12 @@
 		"ci": "Everything CI runs, in order: check, typecheck, test, dev:setup (the build carries .dev.vars to the built Worker), build, test:e2e (Hallmark's lint included). GitHub runs exactly this",
 		"config:check": "Every environment's config whole (staging, production): courts in wrangler.jsonc, Gateweave ID in id.jsonc; read back as Wrangler will, no build, no login",
 		"commands": "Regenerate docs/commands.md from these scripts (--check fails if it is out of date)"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "24.22.2",
+			"onFail": "download"
+		}
 	}
 }
