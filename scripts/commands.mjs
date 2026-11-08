@@ -30,20 +30,21 @@ const tasks = [...readFileSync("mise.toml", "utf8").matchAll(/^\[tasks\."([^"]+)
 );
 const doc = `# Commands
 
-Generated from \`mise.toml\` and \`package.json\` by \`aube run commands\`; don't edit by hand. Tools are pinned in \`mise.toml\`, node in
-\`package.json\` (\`devEngines.runtime\`), both installed by \`mise install\`; packages installed with \`aube install\`. With mise activated in your shell, \`aube\` is on the
-path; otherwise prefix \`mise exec --\`.
+Every command in this repo. Generated from \`mise.toml\` and \`package.json\` by \`aube run commands\`, so don't edit it by
+hand. If \`aube\` isn't found, put \`mise exec --\` in front, or activate mise in your shell.
 
-## mise: the control plane
+## mise tasks
 
-What sits outside this app: Cloudflare and Gateweave ID, and keeping versions current (README, Keeping versions
-current). From the root \`mise.toml\`.
+Everything outside the app itself: running it locally, Cloudflare, Gateweave ID, Hallmark, and keeping versions
+current. From \`mise.toml\`.
 
 | Command | What it's for |
 | --- | --- |
 ${tasks.join("\n")}
 
-## The app
+## The app's scripts
+
+From \`package.json\`.
 
 | Command | What it's for | Runs |
 | --- | --- | --- |
