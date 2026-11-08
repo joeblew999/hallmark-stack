@@ -6,14 +6,15 @@ path; otherwise prefix `mise exec --`.
 
 ## mise: the control plane
 
-What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.toml`.
+What sits outside this app: Cloudflare and Gateweave ID, and keeping versions current (README, Keeping versions
+current). From the root `mise.toml`.
 
 | Command | What it's for |
 | --- | --- |
-| `mise run deps:outdated` | Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which |
-| `mise run deps:audit` | Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in |
-| `mise run deps:update` | The app's side: node to the newest 24 (aube runtime set) and every package in package.json to npm's latest, Better Auth's CLI with better-auth, as exact pins, and aube-lock.yaml to match in one resolve (aube update --latest --exact); skips packages held in aube-workspace.yaml. Changes only package.json and aube-lock.yaml. Run aube run ci after. Stops if a new version lost its build proof (aube trust check) |
-| `mise run tools:update` | The control plane's side: aube to its newest in this file (mise use --pin), as an exact pin. Changes only mise.toml. Run aube run ci after. mise outdated --bump shows what's newer |
+| `mise run deps:check` | The app's side, checked: aube audit (advisories, every package in aube-lock.yaml), then aube outdated (package.json against npm's latest); fails only on what's new, as held packages and accepted advisories are listed in aube-workspace.yaml |
+| `mise run deps:update` | The app's side, moved: node to the newest 24 (aube runtime set) and every package to npm's latest, exact pins, aube-lock.yaml in the same resolve (aube update --latest --exact); held packages stay. Changes only package.json and aube-lock.yaml; then aube run ci. Stops if a new version lost its build proof (aube trust check) |
+| `mise run tools:check` | The control plane's side, checked: the tools pinned in this file against their newest releases (mise outdated --bump aube); reports, changes nothing |
+| `mise run tools:update` | The control plane's side, moved: every tool pinned in this file to its newest, exact pins (mise use --pin aube@latest). Changes only mise.toml; then aube run ci |
 | `mise run cloudflare:login` | Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who |
 | `mise run cloudflare:logout` | End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so |
 | `mise run id:deploy <env>` | One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs) |

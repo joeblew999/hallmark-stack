@@ -219,6 +219,22 @@ GitHub's CI runs, and the same here.
 - **The two photographs** are stand-ins from Hallmark's library, credited in the footer. Replace
   `public/images/clay-court.jpg` and `public/images/goal.jpg` with your own.
 
+## Keeping versions current
+
+Two sides, each with its own check and its own update, and neither update touches the other's files:
+
+| Side          | Its files                        | What's on it                                                                                                                                                                                                | Check                  | Update                  |
+| ------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----------------------- |
+| The app       | `package.json`, `aube-lock.yaml` | Everything the app needs to build, test and run: its packages, node (`devEngines.runtime`, which aube locks with checksums and mise installs) and Better Auth's CLI (it must match the app's `better-auth`) | `mise run deps:check`  | `mise run deps:update`  |
+| Control plane | `mise.toml`                      | The tools that run the repo: aube                                                                                                                                                                           | `mise run tools:check` | `mise run tools:update` |
+
+- **Checks** read only. `deps:check` fails only on what's new: packages held on purpose (`updateConfig`) and advisories known and
+  accepted (`auditConfig`, each with its reason) are listed in `aube-workspace.yaml`.
+- **Updates** pin exact versions; run `aube run ci` after, then commit. Not in CI: their answers change whenever
+  something is published.
+- **The control plane deploys with the app's own wrangler** (`cloudflare:`, `id:` and `app:` tasks), the one the app
+  was built and tested with.
+
 ## Provenance and pins
 
 - **Versions** are Track's at `b8b5ba0`, checked 2026-11-07. node `24.22.2` (Track pins 24; in package.json's `devEngines.runtime`) and aube `2.9.0` (mise.toml) are the

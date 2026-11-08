@@ -26,13 +26,8 @@ task.timings = true
 jobs = 1
 
 [tools]
-# Two sides, each updated by its own task, neither moving the other's files:
-#   the app: package.json and aube-lock.yaml. What the app needs to build, test and run: its packages, node (its
-#     runtime, in devEngines.runtime, which aube locks with checksums and mise installs) and Better Auth's CLI (it
-#     must match the app's better-auth). mise run deps:update moves them all in one resolve.
-#   the control plane: this file. The tools that run the repo: aube. mise run tools:update moves them.
-# The control plane uses the app's own wrangler for the cloudflare:, id: and app: tasks: deploying the app with
-# the wrangler it was built and tested with.
+# The control plane's side: the tools that run the repo. The app's side, node included, is package.json and
+# aube-lock.yaml. Which is which, and the four tasks that keep both current: README, Keeping versions current.
 # Installs the Node packages from package.json and aube-lock.yaml. No npm, no pnpm.
 aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
 
@@ -43,21 +38,22 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 # with none set, as on a Mac, it changes nothing.
 NODE_USE_ENV_PROXY = "1"
 
-# The packages in package.json and aube-lock.yaml. Not in CI: their answers change whenever a package is published.
-[tasks."deps:outdated"]
-description = "Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which"
-run = "aube outdated"
-
-[tasks."deps:audit"]
-description = "Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in"
-run = "aube audit"
+# Keeping versions current (README): deps: is the app's side, tools: this file's. check reads, update changes.
+# Not in CI: their answers change whenever something is published.
+[tasks."deps:check"]
+description = "The app's side, checked: aube audit (advisories, every package in aube-lock.yaml), then aube outdated (package.json against npm's latest); fails only on what's new, as held packages and accepted advisories are listed in aube-workspace.yaml"
+run = ["aube audit", "aube outdated"]
 
 [tasks."deps:update"]
-description = "The app's side: node to the newest 24 (aube runtime set) and every package in package.json to npm's latest, Better Auth's CLI with better-auth, as exact pins, and aube-lock.yaml to match in one resolve (aube update --latest --exact); skips packages held in aube-workspace.yaml. Changes only package.json and aube-lock.yaml. Run aube run ci after. Stops if a new version lost its build proof (aube trust check)"
+description = "The app's side, moved: node to the newest 24 (aube runtime set) and every package to npm's latest, exact pins, aube-lock.yaml in the same resolve (aube update --latest --exact); held packages stay. Changes only package.json and aube-lock.yaml; then aube run ci. Stops if a new version lost its build proof (aube trust check)"
 run = ["aube runtime set node 24 --save-exact", "aube update --latest --exact"]
 
+[tasks."tools:check"]
+description = "The control plane's side, checked: the tools pinned in this file against their newest releases (mise outdated --bump aube); reports, changes nothing"
+run = "mise outdated --bump aube"
+
 [tasks."tools:update"]
-description = "The control plane's side: aube to its newest in this file (mise use --pin), as an exact pin. Changes only mise.toml. Run aube run ci after. mise outdated --bump shows what's newer"
+description = "The control plane's side, moved: every tool pinned in this file to its newest, exact pins (mise use --pin aube@latest). Changes only mise.toml; then aube run ci"
 run = "mise use --pin aube@latest"
 
 [tasks."cloudflare:login"]
