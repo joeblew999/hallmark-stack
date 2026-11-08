@@ -1,8 +1,4 @@
 {
-	"env": {
-		"GITHUB_TOKEN": "",
-		"GH_TOKEN": ""
-	},
 	"hooks": {
 		"PostToolUse": [
 			{
