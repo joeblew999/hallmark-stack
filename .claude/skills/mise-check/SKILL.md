@@ -1,5 +1,4 @@
 ---
-
 name: mise-check
 description: Use when upgrading anything this repo pins (mise tools, Node packages in package.json, Go and Go modules, majors included), checking its mise tasks, or what its GitHub workflow runs. The repo uses mise-check, at the version its .mise/config.toml pins; every command is a task, mise run mise-check:<command>. Never upgrade a pin by hand.
 ---
