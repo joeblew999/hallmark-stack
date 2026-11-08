@@ -18,11 +18,13 @@
 // say it's done. Where both are is written to .tailscale/origins.json, which development's addresses are read from
 // (scripts/environments.mjs).
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { mkdirSync, openSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { LOCAL, ORIGINS } from "./environments.mjs";
 
 export const STATE = ".tailscale";
+/** Tailscale's list of your machines, where an old one is removed or one is renamed. */
+const MACHINES = "https://login.tailscale.com/admin/machines";
 const HOST = hostname()
 	.split(".")[0]
 	.toLowerCase()
@@ -68,6 +70,15 @@ async function daemon(node) {
  */
 export async function tailscaleUp() {
 	const origins = {};
+	// Where each was last time, so an address that moves is stopped, not passed on.
+	const previous = {};
+	if (existsSync(ORIGINS)) {
+		const last = JSON.parse(readFileSync(ORIGINS, "utf8"));
+		for (const node of NODES) {
+			const origin = last[node.key];
+			if (origin) previous[node.key] = { host: new URL(origin).host };
+		}
+	}
 	for (const node of NODES) {
 		await daemon(node);
 		if (status(node)?.BackendState !== "Running") {
@@ -92,6 +103,21 @@ export async function tailscaleUp() {
 		);
 		const host = status(node)?.Self?.DNSName?.replace(/\.$/, "");
 		if (!host) throw new Error(`Tailscale gave ${node.name} no name`);
+		const given = host.split(".")[0];
+		const before = previous[node.key];
+		if (before && before.host !== host) {
+			throw new Error(
+				`The ${node.what} address moved from ${before.host} to ${host}. A passkey only works on the address it was made on. ` +
+					`Remove the old machine at ${MACHINES}, then rename ${given} to ${before.host.split(".")[0]} there.`,
+			);
+		}
+		if (given !== node.name) {
+			console.log(
+				`Note: Tailscale named the ${node.what} machine ${given}, not ${node.name}, because that name was taken when it ` +
+					`first signed in. To get it back, remove the old ${node.name} at ${MACHINES} (if it is still there) and ` +
+					`rename ${given} to ${node.name} there.`,
+			);
+		}
 		origins[node.key] = { origin: `https://${host}`, host };
 	}
 	const result = {
@@ -103,7 +129,10 @@ export async function tailscaleUp() {
 	return result;
 }
 
-/** Funnel off and signed out on both machines, their tailscaled stopped, and .tailscale/ gone. */
+/**
+ * Funnel off and signed out on both machines, their tailscaled stopped, and .tailscale/ gone. The machines stay in your
+ * Tailscale list, signed out, until removed there; signing in again before that gives each a new name with -1.
+ */
 export function tailscaleDown() {
 	for (const node of NODES) {
 		if (!status(node)) continue;
@@ -112,7 +141,9 @@ export function tailscaleDown() {
 		spawnSync("pkill", ["-f", `tailscaled.*${socketOf(node)}`]);
 	}
 	rmSync(STATE, { recursive: true, force: true });
-	console.log("Signed out of Tailscale here; .tailscale/ removed.");
+	console.log(
+		`Signed out of Tailscale here; .tailscale/ removed. Remove both machines at ${MACHINES} before signing in again, or they come back with new names.`,
+	);
 }
 
 // Run as the tasks: tailscale:login (up) and tailscale:logout (down).
