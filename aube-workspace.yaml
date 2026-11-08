@@ -5,3 +5,7 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+# Packages held on purpose, kept out of `aube update` (mise run deps:update): see README, Provenance and pins.
+updateConfig:
+  ignoreDependencies:
+    - puppeteer-core

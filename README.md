@@ -19,7 +19,7 @@ The stack is [Gateweave](https://gateweave.com)'s: every Gateweave product
 [ID](https://github.com/gateweavehq/id) among them. Check there when the stack moves.
 
 TanStack Start · React 19 · Tailwind CSS 4 · shadcn/ui · Better Auth · Drizzle ORM · Cloudflare Workers, Durable
-Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tooling: mise (node, aube), aube, Hallmark.
+Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tooling: mise (aube; node from package.json), aube, Hallmark.
 
 ## Track: the stack this is built on
 
@@ -47,7 +47,7 @@ Left out on purpose, because a booking site doesn't need them: Track's protocol,
 (realtime sync, the IndexedDB replica, WebSockets, the service worker), MCP, the GitHub app, intake email,
 organizations, R2 attachments and email sending.
 
-Different on purpose: aube installs the packages, not pnpm, and mise pins node and aube (`mise.toml`); one package at
+Different on purpose: aube installs the packages, not pnpm, and mise installs node, pinned in `package.json` (`devEngines.runtime`), and aube, pinned in `mise.toml`; one package at
 the root, not a workspace; one `aube run ci` that GitHub runs exactly, instead of Track's several jobs.
 
 ## Hallmark, locked to this stack
@@ -199,7 +199,7 @@ carries on.
 for the end-to-end tests and Hallmark's lint. Then:
 
 ```sh
-mise install            # node and aube, as pinned in mise.toml
+mise install            # node (package.json devEngines.runtime) and aube (mise.toml)
 aube install            # the packages, from aube-lock.yaml
 aube run dev:setup      # .dev.vars with a random secret; the local D1 migrated
 aube run dev            # http://localhost:4710
@@ -221,11 +221,11 @@ GitHub's CI runs, and the same here.
 
 ## Provenance and pins
 
-- **Versions** are Track's at `b8b5ba0`, checked 2026-11-07. node `24.22.2` (Track pins 24) and aube `2.9.0` are the
+- **Versions** are Track's at `b8b5ba0`, checked 2026-11-07. node `24.22.2` (Track pins 24; in package.json's `devEngines.runtime`) and aube `2.9.0` (mise.toml) are the
   newest on that date.
 - **`puppeteer-core` is held at 25.12.0.** Hallmark's lint drives Chrome through it. Every later release depends on
   `chromium-bidi` 157 or newer, which Google has published since October 2026 without npm provenance, and aube's
-  trust policy refuses that. 25.12.0 is the last release built on `chromium-bidi` 17.0.2, which has it. Checked
+  trust policy refuses that. 25.12.0 is the last release built on `chromium-bidi` 17.0.2, which has it. `aube-workspace.yaml` keeps it out of `mise run deps:update` (`updateConfig.ignoreDependencies`), so it stays put while everything else moves. Checked
   2026-11-07 against the npm registry.
 - **Biome** has two CSS rules turned off for `src/styles/` (`biome.json`). `!important` is how Hallmark's
   reduced-motion and slot rules must win. The specificity-order warnings there are between selectors that never

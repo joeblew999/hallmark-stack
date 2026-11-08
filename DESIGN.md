@@ -19,6 +19,7 @@ Never a standalone `.html` page: a new page is a route, a new part is a componen
 
 `src/styles/tokens.css` is the source of truth, in Tailwind's `@theme static` (colours, faces, sizes, tracking, radii,
 shadows, easings, so `bg-paper`, `text-ink`, `font-display` work) and `:root` (space, layout, motion, layers).
+
 ```css
 :root {
 	--color-paper: oklch(97.5% 0.005 90);
