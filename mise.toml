@@ -32,6 +32,19 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 # with none set, as on a Mac, it changes nothing.
 NODE_USE_ENV_PROXY = "1"
 
+# The packages in package.json and aube-lock.yaml. Not in CI: their answers change whenever a package is published.
+[tasks."deps:outdated"]
+description = "Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which"
+run = "aube outdated"
+
+[tasks."deps:audit"]
+description = "Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in"
+run = "aube audit"
+
+[tasks."deps:update"]
+description = "Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). The auth:schema script's auth@ pin moves by hand"
+run = "aube update --latest --exact"
+
 [tasks."cloudflare:login"]
 description = "Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who"
 run = "node scripts/cloudflare-login.mjs"

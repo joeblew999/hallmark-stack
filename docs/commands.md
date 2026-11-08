@@ -10,6 +10,9 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 
 | Command | What it's for |
 | --- | --- |
+| `mise run deps:outdated` | Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which |
+| `mise run deps:audit` | Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in |
+| `mise run deps:update` | Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). The auth:schema script's auth@ pin moves by hand |
 | `mise run cloudflare:login` | Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who |
 | `mise run cloudflare:logout` | End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so |
 | `mise run id:deploy <env>` | One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs) |
@@ -37,7 +40,7 @@ What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.tom
 | `aube run test` | Vitest: unit tests in Node, and the Durable Object in workerd with the real wrangler.jsonc | `vitest run` |
 | `aube run test:e2e` | Playwright on the production build (after aube run build) in installed Chrome, with nobody signed in: the booker, the sign-in button, no passwords, and Hallmark's lint on every page. Signed in, through the real Gateweave ID, is mise run all:e2e | `playwright test` |
 | `aube run hallmark` | Just the Hallmark spec of test:e2e: Hallmark's sloplint on the rendered production build (after aube run build), every page at its widths; fails on anything but clean | `playwright test e2e/hallmark.spec.ts` |
-| `aube run auth:schema` | Regenerate the Better Auth tables (src/server/db/auth-schema.ts) from src/server/auth/config.ts | `aube dlx auth@1.7.16 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes` |
+| `aube run auth:schema` | Regenerate the Better Auth tables (src/server/db/auth-schema.ts) from src/server/auth/config.ts | `aube dlx auth@1.7.18 generate --config src/server/auth/cli.ts --output src/server/db/auth-schema.ts --yes` |
 | `aube run db:generate` | Drizzle: write a migration into migrations/ from the schema | `drizzle-kit generate` |
 | `aube run db:migrate:local` | Apply migrations to the local D1 | `wrangler d1 migrations apply DB --local` |
 | `aube run dev:setup` | One-time: write .dev.vars with a random BETTER_AUTH_SECRET and migrate the local D1 | `node scripts/dev-setup.mjs` |
