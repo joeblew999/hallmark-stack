@@ -15,10 +15,7 @@
 			"!**/migrations/meta",
 			"!.claude/skills/hallmark",
 			"!.hallmark",
-			"!docs/commands.md",
-			"!.mise",
-			"!docs/mise-check",
-			"!.claude/skills/mise-check"
+			"!docs/commands.md"
 		]
 	},
 	"formatter": {

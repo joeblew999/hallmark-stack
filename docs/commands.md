@@ -111,6 +111,12 @@ Logs this repo out of Cloudflare
 
 Lists app packages that are out of date or have security warnings
 
+## `deps:update`
+
+- **Usage:** `deps:update`
+
+Updates the app's packages and node (24.x) to their newest, in package.json and aube-lock.yaml. Then mise run test
+
 ## `docs:check`
 
 - **Usage:** `docs:check`
@@ -219,141 +225,13 @@ Removes Gateweave ID from staging or production. Asks first: its accounts are lo
 
 - **Usage:** `id:update`
 
-Moves us to the newest Gateweave ID release. Then mise run mise-check:verify; deploy it with id:deploy
-
-## `mise-check`
-
-Start here: what's done for this repo, and what to run next (mise run mise-check:show-help: every command)
-
-
-- **Usage:** `mise-check [--json]`
-
-### Flags
-- **`--json`** — one JSON document on stdout, instead of text
-
-## `mise-check:03-init`
-
-- **Usage:** `mise-check:03-init`
-
-03. mise-check's files written into the repo again, after upgrading it (the first time, before these tasks: mise exec github:joeblew999/mise-check@latest -- mise-check init)
-
-## `mise-check:04-check`
-
-04. The repo's rules: init's files current, and .mise/config.toml pinning mise-check
-
-
-- **Usage:** `mise-check:04-check [--json]`
-
-### Flags
-- **`--json`** — one JSON document on stdout, instead of text
-
-## `mise-check:05-show`
-
-05. What's done for this repo, and what to run next
-
-
-- **Usage:** `mise-check:05-show [--json]`
-
-### Flags
-- **`--json`** — one JSON document on stdout, instead of text
-
-## `mise-check:show-help`
-
-- **Usage:** `mise-check:show-help`
-
-Every command
-
-## `mise-check:show-users`
-
-Which of the owner's repos on GitHub use this one: its Go module in their go.mod, its binary in their mise files, at the versions each pins, against the newest release, the behind ones marked. Needs a token for private repos (GITHUB_TOKEN, GH_TOKEN, or gh's login)
-
-
-- **Usage:** `mise-check:show-users [--json]`
-
-### Flags
-- **`--json`** — one JSON document on stdout, instead of text
-
-## `mise-check:show-version`
-
-This mise-check's version
-
-
-- **Usage:** `mise-check:show-version [--json]`
-
-### Flags
-- **`--json`** — one JSON document on stdout, instead of text
-
-## `mise-check:template`
-
-- **Usage:** `mise-check:template`
-
-The template's little app, in a repo with no Go program yet: app/, the mise.toml that runs and tests it, and README.md named for the repo's folder. It never writes over a file
-
-## `mise-check:update`
-
-Every pin at its newest release, in one go: update-mise, update-packages and update-go, in that order. It ends with every pin, the moved ones before → after; git diff shows them, then mise run mise-check:verify proves them (a major move can break)
-
-
-- **Usage:** `mise-check:update [FLAGS]`
-
-### Flags
-- **`--pick`** — ask for each one, with the picker of each tool
-- **`--no-major`** — no major moves: packages within their ranges, Go modules within their major
-- **`--json`** — one JSON document on stdout, every pin before and after, instead of text
-
-## `mise-check:update-go`
-
-Go at its newest, in every go.mod: its toolchain line, and its modules, majors too, their import paths rewritten (go mod tidy, go-mod-upgrade, go mod tidy), and nothing else
-
-
-- **Usage:** `mise-check:update-go [FLAGS]`
-
-### Flags
-- **`--pick`** — ask for each one, with the picker of each tool
-- **`--no-major`** — no major moves: packages within their ranges, Go modules within their major
-- **`--json`** — one JSON document on stdout, every pin before and after, instead of text
-
-## `mise-check:update-mise`
-
-The mise tools at their newest releases, in the repo's mise files (mise upgrade --bump), mise-check's own pin among them, and nothing else
-
-
-- **Usage:** `mise-check:update-mise [FLAGS]`
-
-### Flags
-- **`--pick`** — ask for each one, with the picker of each tool
-- **`--no-major`** — no major moves: packages within their ranges, Go modules within their major
-- **`--json`** — one JSON document on stdout, every pin before and after, instead of text
-
-## `mise-check:update-packages`
-
-The Node packages at their newest releases, package.json and whichever lockfile the repo has (aube update, aube pinned in the repo's mise), and nothing else
-
-
-- **Usage:** `mise-check:update-packages [FLAGS]`
-
-### Flags
-- **`--pick`** — ask for each one, with the picker of each tool
-- **`--no-major`** — no major moves: packages within their ranges, Go modules within their major
-- **`--json`** — one JSON document on stdout, every pin before and after, instead of text
-
-## `mise-check:verify`
-
-- **Usage:** `mise-check:verify`
-
-What the repo's GitHub workflow runs: each pin consistent with what pins it (the packages with their lockfile, aube install --frozen-lockfile; every go.mod with its code, go mod tidy -diff), its own setup and test tasks if it has them, then check. The same here as on GitHub
-
-## `node:update`
-
-- **Usage:** `node:update`
-
-Moves node to its newest 24.x, in package.json (devEngines.runtime). Then mise run mise-check:verify
+Moves us to the newest Gateweave ID release. Then mise run test; deploy it with id:deploy
 
 ## `setup`
 
 - **Usage:** `setup`
 
-Installs the app's packages (mise runs this itself before any task when they changed)
+Installs the repo's tools (into ~/.local/share/mise/installs) and the app's packages. Logged: mise tasks log setup
 
 ## `tailscale:login`
 
@@ -371,13 +249,19 @@ Takes the local site off Tailscale. The machines stay in your Tailscale list unt
 
 - **Usage:** `test`
 
-Runs every check and test, in order. GitHub runs this too, through mise run mise-check:verify
+Runs every check and test, in order. GitHub's CI runs this too
 
 ## `tools:check`
 
 - **Usage:** `tools:check`
 
 Lists tools in mise.toml that are out of date
+
+## `tools:update`
+
+- **Usage:** `tools:update`
+
+Updates the tools in mise.toml to their newest. Then mise run test
 <!-- /mise-tasks -->
 
 ## The app's scripts
