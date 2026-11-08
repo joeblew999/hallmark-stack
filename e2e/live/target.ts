@@ -1,22 +1,26 @@
 // What the live suite runs against, from the deploy scripts' own settings: courts' address and D1, and Gateweave ID's
-// address and D1, for the environment in CLOUDFLARE_ENV (staging or production), which every Wrangler call here
-// inherits. Nothing here is written twice. The tests ask this file, never for a URL of their own.
+// address and D1, for the environment in ENVIRONMENT (staging, production, or development: mise run all:dev on this
+// machine), set by playwright.live.config.ts; every Wrangler call here inherits its CLOUDFLARE_ENV. Nothing here is
+// written twice (scripts/environments.mjs says where each environment is). The tests ask this file, never for a URL
+// of their own.
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { appConfig } from "../../scripts/app-config.mjs";
+import { appD1, appOrigin } from "../../scripts/app-config.mjs";
 import { APP_WRANGLER } from "../../scripts/cloudflare.mjs";
-import { ENVIRONMENTS } from "../../scripts/environments.mjs";
-import { idConfig, idWrangler } from "../../scripts/id-release.mjs";
+import { DEVELOPMENT, ENVIRONMENTS } from "../../scripts/environments.mjs";
+import { idD1, idOrigin, idWrangler } from "../../scripts/id-release.mjs";
 
-/** The environment under test: staging or production, never the development top level. */
-export const ENV = process.env.CLOUDFLARE_ENV ?? "";
-if (!ENVIRONMENTS.includes(ENV)) {
-	throw new Error(`CLOUDFLARE_ENV must be one of ${ENVIRONMENTS.join(", ")}, not "${ENV}".`);
+/** The environment under test. */
+export const ENV = process.env.ENVIRONMENT ?? "";
+if (![...ENVIRONMENTS, DEVELOPMENT].includes(ENV)) {
+	throw new Error(
+		`ENVIRONMENT must be one of ${[...ENVIRONMENTS, DEVELOPMENT].join(", ")}, not "${ENV}".`,
+	);
 }
-export const COURTS = `https://${appConfig(ENV).domain}`;
-export const ID = `https://${idConfig(ENV).domain}`;
+export const COURTS = appOrigin(ENV);
+export const ID = idOrigin(ENV);
 
 /** Where one run keeps its two people and their signed-in browsers. Git-ignored. */
 export const STATE = "e2e/live/.state";
@@ -36,7 +40,7 @@ export const people = (): { a: Person; b: Person } => ({
 
 /** One SQL statement on Gateweave ID's D1, answered as rows. */
 export function inId(sql: string): Record<string, unknown>[] {
-	const out = idWrangler(["d1", "execute", "DB", "--remote", "--json", "--command", sql], {
+	const out = idWrangler(["d1", "execute", "DB", ...idD1(ENV), "--json", "--command", sql], {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 	});
@@ -47,7 +51,7 @@ export function inId(sql: string): Record<string, unknown>[] {
 export function inCourts(sql: string): Record<string, unknown>[] {
 	const run = spawnSync(
 		"node",
-		[APP_WRANGLER, "d1", "execute", "DB", "--remote", "--json", "--command", sql],
+		[APP_WRANGLER, "d1", "execute", "DB", ...appD1(ENV), "--json", "--command", sql],
 		{ encoding: "utf8" },
 	);
 	if (run.status !== 0) throw new Error(`courts' D1 refused: ${run.stdout}${run.stderr}`);
@@ -73,6 +77,6 @@ export async function signedIn(page: Page, origin: string) {
  */
 export async function signIn(page: Page) {
 	const back = page.waitForResponse((r) => r.url().startsWith(`${COURTS}/api/auth/callback/`));
-	await page.locator(".nav").getByRole("button", { name: "Sign in" }).click();
+	await page.locator(".nav").getByRole("link", { name: "Sign in" }).click();
 	await back;
 }

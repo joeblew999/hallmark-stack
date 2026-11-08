@@ -1,16 +1,16 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { COURTS, HOURS, type Hour } from "#/lib/courts";
-import { SignInButton, SignOutButton } from "./account";
 import { useBooking } from "./booking";
 
 const scrollToBooker = () => document.getElementById("book")?.scrollIntoView();
 
-/**
- * The search-led bar: the wordmark, a search that jumps the booker to a court or a time, and the
- * way in or out. Signing in and out is Gateweave ID's (src/components/site/account.tsx).
- */
-export function SiteNav({ signedIn }: { signedIn: boolean }) {
+/** The Book page with a day, an hour and a court already picked. */
+const bookHref = (date: string, hour: Hour, court: string) =>
+	`/book?${new URLSearchParams({ date, hour, court })}`;
+
+/** Find a court or a time: jumps the booker to it. On the Book page, above the booker; `/` focuses it. */
+export function FindCourt() {
 	const { pick, setHour } = useBooking();
 	const input = useRef<HTMLInputElement>(null);
 	const [message, setMessage] = useState("");
@@ -42,46 +42,26 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
 	}
 
 	return (
-		<header className="nav">
-			<div className="container nav__inner">
-				<a className="wordmark" href="/" aria-label="Eastfield Courts, home">
-					<span>Eastfield</span>
-					<span>Courts</span>
-				</a>
-				<search className="search">
-					<form onSubmit={search}>
-						<label className="visually-hidden" htmlFor="q">
-							Find a court or a time
-						</label>
-						<input
-							ref={input}
-							id="q"
-							name="q"
-							type="search"
-							placeholder="Find a court or a time"
-							autoComplete="off"
-							enterKeyHint="search"
-						/>
-						<kbd>/</kbd>
-						<p className="search__msg" aria-live="polite">
-							{message}
-						</p>
-					</form>
-				</search>
-				{signedIn ? (
-					<div className="nav__book">
-						<Link className="link" to="/bookings">
-							Your bookings
-						</Link>
-						<SignOutButton className="link link--button" />
-					</div>
-				) : (
-					<div className="nav__book">
-						<SignInButton next="/#book" className="link link--button" label="Sign in" />
-					</div>
-				)}
-			</div>
-		</header>
+		<search className="search">
+			<form onSubmit={search}>
+				<label className="visually-hidden" htmlFor="q">
+					Find a court or a time
+				</label>
+				<input
+					ref={input}
+					id="q"
+					name="q"
+					type="search"
+					placeholder="Find a court or a time"
+					autoComplete="off"
+					enterKeyHint="search"
+				/>
+				<kbd>/</kbd>
+				<p className="search__msg" aria-live="polite">
+					{message}
+				</p>
+			</form>
+		</search>
 	);
 }
 
@@ -147,15 +127,21 @@ if (pitch)
 		circle: [1094, 278, 30],
 	};
 
-/** The site plan: every court as a diagram; your pick in red, taken courts a tone darker. Click a free one to book it. */
+/**
+ * The site plan, the Courts page's lead (Hallmark's Index posture: the plan is the visual, the head small above it):
+ * every court as a diagram; your pick in red, taken courts a tone darker. A free one opens the Book page with it picked.
+ */
 export function SitePlan() {
-	const { court, hour, isTaken, pick } = useBooking();
+	const { court, day, hour, isTaken } = useBooking();
+	const navigate = useNavigate();
 	return (
 		<section className="plan" id="plan" aria-labelledby="plan-title">
 			<div className="container">
 				<div className="plan__head">
-					<h2 id="plan-title">Clay courts, padel cages, one pitch.</h2>
-					<p className="lead">Click a court to book it for the hour you picked.</p>
+					<h1 id="plan-title">Five clay courts, two padel cages, one pitch.</h1>
+					<p className="lead">
+						Pick a free court to book it at {hour} {day.label.toLowerCase()}.
+					</p>
 				</div>
 				<div className="plan__map">
 					<svg className="plan__svg" viewBox="0 0 1312 560">
@@ -166,14 +152,15 @@ export function SitePlan() {
 							const taken = isTaken(c.id);
 							const cls = taken ? "is-taken" : court?.id === c.id ? "is-pick" : undefined;
 							return (
-								// biome-ignore lint/a11y/useValidAnchor: a real link to the booker (#book) that also picks the court on the way
 								<a
 									key={c.id}
-									href="#book"
+									href={bookHref(day.date, hour, c.id)}
 									className={cls}
 									aria-label={`${c.name}, ${taken ? "taken" : "free"} at ${hour}`}
 									onClick={(e) => {
-										if (!pick(c.id)) e.preventDefault();
+										e.preventDefault();
+										if (!taken)
+											navigate({ to: "/book", search: { date: day.date, hour, court: c.id } });
 									}}
 								>
 									<rect
@@ -331,13 +318,14 @@ const WEEK = [
 	["Saturday", "Mini tennis", "Family padel", "Club night"],
 ] as const;
 
+/** The week's sessions, the Coaching page's lead (Index posture: the table is the visual, the head small above it). */
 export function Coaching() {
 	return (
 		<section className="coaching" id="coaching" aria-labelledby="coaching-title">
 			<div className="container coaching__grid">
 				<div className="coaching__head">
-					<h2 id="coaching-title">Coaching from five till seven.</h2>
-					<p className="lead">Groups by level; ask at the desk for one-to-one.</p>
+					<h1 id="coaching-title">Coaching from five till seven.</h1>
+					<p className="lead">Juniors first, then adults, in groups by level.</p>
 				</div>
 				<table className="week">
 					<caption className="visually-hidden">Weekly coaching sessions</caption>
@@ -365,14 +353,31 @@ export function Coaching() {
 	);
 }
 
+/** Grid's statement hung asymmetric: one sentence at statement size from column 4, its key noun a link. */
+export function CoachingNote() {
+	return (
+		<section className="statement" aria-label="How to join a session">
+			<div className="container statement__grid">
+				<p className="statement__text">
+					No booking needed: turn up ten minutes early, and ask at{" "}
+					<Link className="link" to="/visit">
+						the desk
+					</Link>{" "}
+					for one-to-one.
+				</p>
+			</div>
+		</section>
+	);
+}
+
+/** The Visit page's lead (Stage posture: the pitch photograph beside the hours and the address). */
 export function Visit() {
-	const { freeToday, days, choose } = useBooking();
-	const today = days[0];
 	return (
 		<section className="visit" id="visit" aria-labelledby="visit-title">
 			<div className="container visit__grid">
 				<div className="visit__text">
-					<h2 id="visit-title">Where to find the clay.</h2>
+					<h1 id="visit-title">Where to find the clay.</h1>
+					<p className="lead">Walk in at the clubhouse desk; the courts are behind it.</p>
 					<dl className="visit__facts">
 						<div>
 							<dt>Open</dt>
@@ -391,23 +396,6 @@ export function Visit() {
 							</dd>
 						</div>
 					</dl>
-					<div className="visit__next">
-						<h3>Free today</h3>
-						<ul className="next">
-							{freeToday.map(({ hour, court }: { hour: Hour; court: (typeof COURTS)[number] }) => (
-								<li key={hour}>
-									{/* biome-ignore lint/a11y/useValidAnchor: a real link to the booker (#book) that also sets day, hour and court */}
-									<a
-										className="next__slot"
-										href="#book"
-										onClick={() => today && choose(today.date, hour, court.id)}
-									>
-										{hour}, {court.short}
-									</a>
-								</li>
-							))}
-						</ul>
-					</div>
 				</div>
 				<figure
 					className="visit__photo"
@@ -423,6 +411,37 @@ export function Visit() {
 						style={{ objectPosition: "50% 45%" }}
 					/>
 				</figure>
+			</div>
+		</section>
+	);
+}
+
+/** Grid's field that holds a control: today's first free court for each hour, set large on the ultramarine. */
+export function FreeToday() {
+	const { freeToday, days } = useBooking();
+	const today = days[0];
+	return (
+		<section className="today" aria-labelledby="today-title">
+			<div className="container today__grid">
+				<h2 id="today-title">Free today</h2>
+				{freeToday.length === 0 ? (
+					<p className="lead">Every court is taken today. Tomorrow is on the Book page.</p>
+				) : (
+					<ul className="next">
+						{freeToday.map(({ hour, court }: { hour: Hour; court: (typeof COURTS)[number] }) => (
+							<li key={hour}>
+								<Link
+									className="next__slot"
+									to="/book"
+									search={{ date: today?.date, hour, court: court.id }}
+								>
+									<span>{hour}</span>
+									<small>{court.name}</small>
+								</Link>
+							</li>
+						))}
+					</ul>
+				)}
 			</div>
 		</section>
 	);
@@ -454,51 +473,5 @@ export function BookingBar() {
 				</a>
 			</div>
 		</div>
-	);
-}
-
-export function Footer() {
-	return (
-		<footer className="foot">
-			<div className="container foot__inner">
-				<p className="foot__mark">Eastfield Courts</p>
-				<p className="foot__col">
-					Tennis, padel and five-a-side, booked by the hour.{" "}
-					<a className="link" href="#book">
-						Book
-					</a>
-					,{" "}
-					<a className="link" href="#plan">
-						the site plan
-					</a>
-					,{" "}
-					<a className="link" href="#coaching">
-						coaching
-					</a>{" "}
-					or{" "}
-					<a className="link" href="#visit">
-						how to find us
-					</a>
-					.
-				</p>
-				<p className="foot__credits" data-credits>
-					Photographs:{" "}
-					<a
-						className="link"
-						href="https://commons.wikimedia.org/wiki/File:Rich%C3%A8l_Hogenkamp_-_Masters_de_Madrid_2015_-_11.jpg"
-					>
-						Carlos Delgado
-					</a>{" "}
-					(CC BY-SA 4.0),{" "}
-					<a
-						className="link"
-						href="https://commons.wikimedia.org/wiki/File:Goal_on_the_move_(5772132849).jpg"
-					>
-						Håkan Dahlström
-					</a>{" "}
-					(CC BY 2.0), Wikimedia Commons.
-				</p>
-			</div>
-		</footer>
 	);
 }

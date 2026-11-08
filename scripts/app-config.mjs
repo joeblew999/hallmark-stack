@@ -2,6 +2,7 @@
 // for an environment, read from wrangler.jsonc as Wrangler reads it, and its id and name at ID. Used by app-deploy.mjs,
 // app-register.mjs, app-undeploy.mjs and the live suite (e2e/live/target.ts).
 import { unstable_readConfig } from "wrangler";
+import { developmentOrigins, local } from "./environments.mjs";
 
 /** The Worker, its D1 database, its Custom Domain and where its data lives, for `env`, as Wrangler resolves them. */
 export function appConfig(env) {
@@ -17,3 +18,10 @@ export function appConfig(env) {
 /** This app's id at each Gateweave ID, and its name on ID's pages. */
 export const APP_ID = "courts";
 export const APP_NAME = "Eastfield Courts";
+
+/** Where courts answers in `env`: its Custom Domain, or development's address (scripts/environments.mjs). */
+export const appOrigin = (env) =>
+	local(env) ? developmentOrigins().app : `https://${appConfig(env).domain}`;
+
+/** Where courts' D1 is for Wrangler in `env`: the local one `vite dev` uses, or Cloudflare's. */
+export const appD1 = (env) => (local(env) ? ["--local"] : ["--remote"]);

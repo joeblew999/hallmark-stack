@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { SignInButton, SignOutButton } from "#/components/site/account";
-import { PlainNav } from "#/components/site/chrome";
+import { Footer, SiteHeader } from "#/components/site/chrome";
 import { cancelBooking, myBookings } from "#/lib/bookings";
 import { courtById } from "#/lib/courts";
 
@@ -32,13 +32,7 @@ function Bookings() {
 
 	return (
 		<>
-			<PlainNav
-				action={
-					<Link className="link nav__book" to="/" hash="book">
-						Book a court
-					</Link>
-				}
-			/>
+			<SiteHeader signedIn={user !== null} />
 			<main id="main" className="mine">
 				<div className="container mine__grid">
 					<div className="mine__head">
@@ -69,7 +63,7 @@ function Bookings() {
 					) : bookings.length === 0 ? (
 						<div className="mine__empty">
 							<p>Nothing booked from today on. Pick an hour and a court on the booker.</p>
-							<Link className="btn" to="/" hash="book">
+							<Link className="btn" to="/book">
 								Book a court
 							</Link>
 						</div>
@@ -109,6 +103,7 @@ function Bookings() {
 					)}
 				</div>
 			</main>
+			<Footer />
 		</>
 	);
 }

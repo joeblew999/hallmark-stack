@@ -6,6 +6,12 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
 	resolve: { tsconfigPaths: true },
+	// Behind mise run all:dev's Tailscale Funnel the browser reaches this dev server on 443, not on its own port, so live
+	// reload's connection is told to use 443 (Vite's hmr.clientPort, for a server behind a proxy). Without it the
+	// connection fails and the page reloads itself over and over. Unset everywhere else, so it changes nothing there.
+	...(process.env.DEV_HMR_CLIENT_PORT && {
+		server: { hmr: { clientPort: Number(process.env.DEV_HMR_CLIENT_PORT) } },
+	}),
 	plugins: [
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tailwindcss(),

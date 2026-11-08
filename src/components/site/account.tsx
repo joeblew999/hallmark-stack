@@ -1,62 +1,25 @@
-import { useState } from "react";
-import { authClient } from "#/lib/auth-client";
-import { LiveButton } from "./live-button";
+// Signing in and out, Gateweave ID's way, without the page's script: a link and a form to courts' own routes
+// (src/server/auth/sign-in-out.ts), so the first press works the moment it is on screen. From Track's ProviderButton
+// and sign-out (apps/web/src/routes/login.tsx and its account menu at b8b5ba0), which called Better Auth from the
+// browser behind a button that waited for the script (LiveButton); the routes call the same endpoints.
 
-/** Better Auth's id for Gateweave ID (OIDC_PROVIDER in src/server/auth/oidc-sign-in.ts, out of the browser's reach). */
-const OIDC_PROVIDER = "oidc";
+/** Where "Sign in" goes: Gateweave ID, and back to `next` (a path on this site) once signed in. */
+export const signInHref = (next: string) => `/sign-in?next=${encodeURIComponent(next)}`;
 
-/** Where a refused sign-in comes back to: the page that explains why (src/routes/login.tsx). */
-const REFUSED = "/login";
-
-/**
- * Sends the browser to Gateweave ID, and back to `next` once signed in. ID's own page offers both
- * signing in and making an account, and carries the request across either way. As Track's
- * ProviderButton (apps/web/src/routes/login.tsx at b8b5ba0): the site finds out ID is down only now.
- */
-export async function startSignIn(next: string): Promise<string | null> {
-	const { error } = await authClient.signIn.social({
-		provider: OIDC_PROVIDER,
-		callbackURL: next,
-		errorCallbackURL: REFUSED,
-	});
-	if (!error) return null;
-	return error.code === "PROVIDER_NOT_FOUND"
-		? "We could not reach Gateweave ID. Try again."
-		: (error.message ?? "Signing in did not work. Try again.");
-}
-
-/** "Sign in or create account": the one way in. */
+/** "Sign in or create account": the one way in. ID's own page offers both. */
 export function SignInButton({
 	next,
-	className,
+	className = "btn",
 	label = "Sign in or create account",
 }: {
 	next: string;
 	className?: string;
 	label?: string;
 }) {
-	const [pending, setPending] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-
-	async function onClick() {
-		setPending(true);
-		setError(null);
-		setError(await startSignIn(next));
-		// Going back from ID can bring this page back as it was, so it must not stay disabled.
-		setPending(false);
-	}
-
 	return (
-		<>
-			<LiveButton className={className} disabled={pending} onClick={onClick}>
-				{label}
-			</LiveButton>
-			{error && (
-				<span className="auth__msg" role="alert">
-					{error}
-				</span>
-			)}
-		</>
+		<a className={className} href={signInHref(next)}>
+			{label}
+		</a>
 	);
 }
 
@@ -64,21 +27,14 @@ export function SignInButton({
  * Signs out of this site, and leaves the person signed in at Gateweave ID, as Track does. Signing out
  * at ID (its account page) signs them out here too, through back-channel logout. Signing out of both
  * in one go, through ID's end-session, waits on two problems in Gateweave ID, seen on v0.10.4 and
- * still in v0.11.4 (issue #7).
+ * still in v0.11.4 (issue #7). A form, so it works before the script; the server sends a fresh home page.
  */
 export function SignOutButton({ className }: { className?: string }) {
-	const [pending, setPending] = useState(false);
-
-	async function onClick() {
-		setPending(true);
-		await authClient.signOut();
-		// A fresh page, so nothing of theirs stays on screen.
-		window.location.assign("/");
-	}
-
 	return (
-		<LiveButton className={className} disabled={pending} onClick={onClick}>
-			Sign out
-		</LiveButton>
+		<form className="signout" method="post" action="/sign-out">
+			<button className={className ?? "btn"} type="submit">
+				Sign out
+			</button>
+		</form>
 	);
 }

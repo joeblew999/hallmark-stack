@@ -49,7 +49,7 @@ function NotFound() {
 			<h1>Not a court.</h1>
 			<p className="lead">That page doesn’t exist.</p>
 			<a className="link" href="/">
-				Back to the booker
+				Back to the home page
 			</a>
 		</main>
 	);

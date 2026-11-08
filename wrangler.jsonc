@@ -29,9 +29,17 @@
 	},
 	// Where a venue's Durable Object starts (src/server/venue.ts), next to its people: the venues are in Thailand,
 	// and D1 is made there too (issue #5).
-	"vars": { "LOCATION": "apac" },
+	// BETTER_AUTH_URL empty: courts' address is taken from each request. mise run all:dev sets it in .dev.vars to its
+	// Tailscale Funnel address (scripts/dev.mjs), as Gateweave ID's is set; Wrangler loads a .dev.vars value for a var.
+	"vars": { "LOCATION": "apac", "BETTER_AUTH_URL": "" },
 	"placement": { "region": "aws:ap-northeast-1" },
-	"secrets": { "required": ["BETTER_AUTH_SECRET"] },
+	// Every secret courts uses, so Wrangler loads each from .dev.vars (with `secrets` set it loads only these) and types
+	// them. Development is never deployed, so none of them can block a deploy. `mise run all:dev` writes the OIDC three
+	// (app:register, local). Staging and production name only BETTER_AUTH_SECRET: there the OIDC three arrive after the
+	// first deploy (id:deploy, app:deploy, then app:register), and Wrangler refuses a new Worker missing a required one.
+	"secrets": {
+		"required": ["BETTER_AUTH_SECRET", "OIDC_ISSUER", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET"]
+	},
 	"env": {
 		"staging": {
 			// A Workers Custom Domain: Gateweave ID reaches it there, never on workers.dev (issue #2).

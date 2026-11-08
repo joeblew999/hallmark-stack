@@ -4,6 +4,8 @@
 const REFUSALS: Record<string, string> = {
 	access_denied: "You chose not to sign in. Nothing was booked.",
 	email_not_found: "Gateweave ID did not give us an email address for you, and bookings need one.",
+	// Ours, from /sign-in (src/server/auth/sign-in-out.ts): Gateweave ID didn't answer, or isn't set up here.
+	unavailable: "We could not reach Gateweave ID. Try again.",
 };
 
 /**

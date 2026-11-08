@@ -9,7 +9,7 @@ import {
 	experimental_readRawConfig,
 	unstable_readConfig,
 } from "wrangler";
-import { ENVIRONMENTS } from "./environments.mjs";
+import { developmentOrigins, ENVIRONMENTS, local } from "./environments.mjs";
 
 /** ID's release, from github.com/gateweavehq/id/releases, the newest on 2026-11-07, when it was checked. */
 export const ID_RELEASE = "v0.11.4";
@@ -117,6 +117,14 @@ export function idConfig(env) {
 		throw new Error(`ID's env.${env} has no Custom Domain, D1 or queue`);
 	return { worker: config.name, database, queue, domain };
 }
+
+/** Where Gateweave ID answers in `env`: its Custom Domain, or development's address (scripts/environments.mjs). */
+export const idOrigin = (env) =>
+	local(env) ? developmentOrigins().id : `https://${idConfig(env).domain}`;
+
+/** Where ID's D1 is for its Wrangler in `env`: the local one ID's own `dev` and `dev:setup` use, or Cloudflare's. */
+export const idD1 = (env) =>
+	local(env) ? ["--local", "--persist-to", join("apps/web", ".wrangler/state")] : ["--remote"];
 
 /** ID's own pinned Wrangler (its script), for scripts/cloudflare.mjs's remove(). */
 export const ID_WRANGLER = resolve(ID_WEB, "node_modules/wrangler/bin/wrangler.js");

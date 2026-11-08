@@ -5,7 +5,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { createServer, type Server } from "node:http";
 import { dirname, extname, join, normalize } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { COURTS, ID, inCourts, open, people, signedIn, signIn, stateOf } from "./target";
+import { local } from "../../scripts/environments.mjs";
+import { hallmarkClean } from "../hallmark-verdict";
+import { COURTS, ENV, ID, inCourts, open, people, signedIn, signIn, stateOf } from "./target";
 
 test.describe.configure({ mode: "serial" });
 
@@ -90,35 +92,44 @@ async function savePage(page: Page, name: string) {
 const saved: { page?: string; app?: string } = {};
 
 test("a double booking is refused, and a cancel frees the court", async () => {
-	await open(a, "/");
+	await open(a, "/book");
 	const court = await pick(a);
-	await open(b, "/");
+	await open(b, "/book");
 	expect(await pick(b), "both are offered the same court").toBe(court);
 
 	await a.locator(".booker .btn").click();
 	await expect(a.locator(".booker__msg")).toContainText(`Booked: ${court}`);
 	await b.locator(".booker .btn").click();
 	await expect(b.locator(".booker__msg")).toContainText("Someone took");
-	await open(b, "/");
+	await open(b, "/book");
 	await pick(b);
 	await expect(courtRow(b, court)).toContainText("taken");
 
-	// A's pages, signed in and with a booking on them, for Hallmark's lint below.
+	// A's pages, signed in and with a booking on them, for Hallmark's lint below (deployed sites only: see there).
 	rmSync(SAVED, { recursive: true, force: true });
-	await open(a, "/");
-	saved.page = await savePage(a, "home");
+	if (!local(ENV)) {
+		await open(a, "/");
+		saved.page = await savePage(a, "home");
+	}
 	await open(a, "/bookings");
 	await expect(a.locator(".mine__table tbody tr").first()).toBeVisible();
-	saved.app = await savePage(a, "bookings");
+	if (!local(ENV)) saved.app = await savePage(a, "bookings");
 
 	await a.getByRole("button", { name: "Cancel" }).first().click();
 	await expect(a.locator(".mine__empty")).toBeVisible();
-	await open(b, "/");
+	await open(b, "/book");
 	await pick(b);
 	await expect(courtRow(b, court)).not.toContainText("taken");
 });
 
 test("the signed-in pages pass Hallmark's lint, as deployed", async () => {
+	// A deployed site's pages are a few bundled files; a dev server's are hundreds of separate modules, each through
+	// Tailscale, and saving them all outlasts the test. Development's pages are linted on the production build
+	// instead (mise run hallmark:lint, every route).
+	test.skip(
+		local(ENV),
+		"development serves unbundled modules: mise run hallmark:lint covers its build",
+	);
 	// Over HTTP, as e2e/hallmark.spec.ts does: given a file, the lint would also read the saved built CSS as source.
 	const types: Record<string, string> = {
 		html: "text/html",
@@ -169,9 +180,7 @@ test("the signed-in pages pass Hallmark's lint, as deployed", async () => {
 				});
 				child.on("close", (code) => done(`${out}\n(sloplint exited ${code})`));
 			});
-			expect(output, `Hallmark, signed in, --scope ${scope}:\n${output}`).toMatch(
-				/clean\. 0 FAIL, 0 REFLEX, 0 WARN[\s\S]*\(sloplint exited 0\)$/,
-			);
+			expect(hallmarkClean(output), `Hallmark, signed in, --scope ${scope}:\n${output}`).toBe(true);
 		}
 	} finally {
 		server.close();
@@ -198,7 +207,7 @@ test("courts takes the name from Gateweave ID again at the next sign-in", async 
 test("courts' Sign out signs out of courts, and leaves Gateweave ID signed in", async () => {
 	await open(a, "/");
 	await a.locator(".nav").getByRole("button", { name: "Sign out" }).click();
-	await expect(a.locator(".nav").getByRole("button", { name: "Sign in" })).toBeVisible();
+	await expect(a.locator(".nav").getByRole("link", { name: "Sign in" })).toBeVisible();
 	expect(await signedIn(a, COURTS), "signed in to courts").toBe(false);
 	expect(await signedIn(a, ID), "signed in at ID").toBe(true);
 	expect(await signedIn(b, COURTS), "B, still signed in to courts").toBe(true);
