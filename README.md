@@ -199,7 +199,7 @@ carries on.
 for the end-to-end tests and Hallmark's lint. Then:
 
 ```sh
-mise install            # node (package.json devEngines.runtime) and aube (mise.toml)
+mise install            # node (package.json devEngines.runtime), aube and Better Auth's CLI (mise.toml)
 aube install            # the packages, from aube-lock.yaml
 aube run dev:setup      # .dev.vars with a random secret; the local D1 migrated
 aube run dev            # http://localhost:4710
