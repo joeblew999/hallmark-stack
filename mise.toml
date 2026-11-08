@@ -26,8 +26,11 @@ lockfile_platforms = ["linux-x64", "macos-arm64"]
 experimental = true
 # npm: tools (the skills CLI) are installed by the aube built into mise. The aube in [tools] is the command you run.
 npm.package_manager = "aube"
-# mise 2026.11 fails to install aube 2.9.0 while it fetches aube's agent skill (a 404); it isn't needed.
-skills.fetch = false
+# The agent skills our tools ship (aube's, Pitchfork's), for the exact versions pinned: mise fetches them on install
+# and links them into .claude/skills, where Claude reads them, after every install, use and upgrade. The links are
+# per machine: mise keeps them out of git (.git/info/exclude).
+skills.dir = ".claude/skills"
+skills.auto_sync = true
 # node's version is package.json's devEngines.runtime, the one pin, which aube and mise both read.
 idiomatic_version_file_enable_tools = ["node"]
 # Every mise run says how long each task took, on every OS.
