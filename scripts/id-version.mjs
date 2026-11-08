@@ -4,7 +4,7 @@
 //   check   lists each newer release, with its page (the release notes), and says if it adds database migrations
 //   update  writes the newest release and its commit into scripts/id-release.mjs, then fetches it
 //
-// After update: aube run ci, mise run all:dev and mise run all:e2e development, then commit. Staging and production
+// After update: mise run mise-check:verify, mise run all:dev and mise run all:e2e development, then commit. Staging and production
 // get it from mise run id:deploy <env>.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -101,7 +101,7 @@ function update() {
 		stdio: "inherit",
 	});
 	console.log(
-		"Next: aube run ci, mise run all:dev and mise run all:e2e development, then commit. Deploy with mise run id:deploy <env>.",
+		"Next: mise run mise-check:verify, mise run all:dev and mise run all:e2e development, then commit. Deploy with mise run id:deploy <env>.",
 	);
 }
 

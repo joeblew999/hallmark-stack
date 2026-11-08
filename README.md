@@ -12,15 +12,20 @@ Every command is listed in [docs/commands.md](docs/commands.md). That file is ge
 
 ## Getting started
 
-You need [mise](https://mise.jdx.dev/getting-started.html) (`brew install mise`) and Google Chrome. Then:
+You need [mise](https://mise.jdx.dev/getting-started.html) (`brew install mise`). Then:
 
 ```sh
-mise install       # installs node, aube, the skills CLI, Pitchfork and Tailscale, at the versions this repo pins
-aube install       # installs the app's packages
-mise run all:dev   # runs the site and Gateweave ID on this machine
+mise install          # the tools this repo pins (mise.toml, checked against mise.lock), mise-check among them
+mise doctor project   # says if anything mise can't install is missing (Google Chrome, Claude Code)
+mise run all:dev      # runs the site and Gateweave ID on this machine
 ```
 
-The same commands work on a Mac and in a Claude cloud session.
+mise installs the app's packages itself, before any task, whenever `package.json` or `aube-lock.yaml` changed
+(`[deps.aube]` in `mise.toml`). Nobody runs `aube install`.
+
+The same commands work on a Mac and in a Claude cloud session. A cloud session runs
+`.claude/hooks/mise-check-session-start.sh` when it starts, which installs mise and the tools, so it begins where a
+developer's machine is after `mise install`.
 
 ## Running it locally
 
@@ -63,18 +68,23 @@ Things worth knowing:
   tunnel. Staging and production are fast.
 - `aube run dev` runs the site alone, signed out.
 
-## Seeing what ran
+## How everyone works
 
-mise records every task you run, on the Mac and in a cloud session alike:
+Developers, GitHub's CI and Claude all do the same things, with the same commands:
 
-```sh
-mise tasks history                  # every run: when, how long, which environment, passed or failed
-mise tasks log all:e2e              # everything the last run of a task printed
-mise tasks log all:e2e --path       # where that is kept
-```
+- **Everything is a mise task:** `mise run <task>`. The list is [docs/commands.md](docs/commands.md).
+- **Checks and tests:** `mise run test`. GitHub runs `mise run mise-check:verify`, which checks the lockfiles, runs
+  `mise run setup` and `mise run test`, then mise-check's own rules. Run it yourself to see exactly what CI sees.
+- **Seeing what ran:**
 
-These are mise's own (`task.logs` and `task.history_limit` in `mise.toml`). Claude uses the same commands; it runs no
-wrappers or log files of its own.
+  ```sh
+  mise tasks history              # every run: when, how long, which environment, passed or failed
+  mise tasks log all:e2e          # everything the last run of a task printed
+  mise daemons logs courts        # what a dev server printed (or: logs id)
+  ```
+
+- **No private ways in.** Claude runs no wrappers, log files or scripts of its own. If something is awkward to run or
+  read, it is fixed in the repo, for everyone.
 
 ## Deploying
 
@@ -161,14 +171,17 @@ signed in on staging (`mise run all:e2e staging`).
 
 ## Keeping versions current
 
-Each thing has a check (reads only) and an update (changes the files). Run `aube run ci` after an update, then commit.
+Each thing has a check (reads only) and an update (changes the files). Run `mise run mise-check:verify` after an update,
+then commit.
 
-| What                        | Its files                        | Check                  | Update                     |
-| --------------------------- | -------------------------------- | ---------------------- | -------------------------- |
-| The app's packages and node | `package.json`, `aube-lock.yaml` | `mise run deps:check`  | `mise run deps:update`     |
-| The repo's tools            | `mise.toml`                      | `mise run tools:check` | `mise run tools:update`    |
-| Gateweave ID                | `scripts/id-release.mjs`         | `mise run id:check`    | `mise run id:update`       |
-| Hallmark                    | `.claude/skills/hallmark/`       |                        | `mise run hallmark:update` |
+| What               | Its files                        | Check                  | Update                                                                |
+| ------------------ | -------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| The app's packages | `package.json`, `aube-lock.yaml` | `mise run deps:check`  | `mise run mise-check:update-packages`                                 |
+| node               | `package.json` (`devEngines`)    | `mise run deps:check`  | `mise run node:update`                                                |
+| The repo's tools   | `mise.toml`, `mise.lock`         | `mise run tools:check` | `mise run mise-check:update-mise`                                     |
+| mise-check         | `.mise/config.toml`              | `mise run mise-check`  | `mise run mise-check:update-mise`, then `mise run mise-check:03-init` |
+| Gateweave ID       | `scripts/id-release.mjs`         | `mise run id:check`    | `mise run id:update`                                                  |
+| Hallmark           | `.claude/skills/hallmark/`       |                        | `mise run hallmark:update`                                            |
 
 - `id:check` lists newer ID releases with links to their notes, and says if they add database migrations. Read the
   notes before updating. After `id:update`, test it with `mise run all:dev` and `mise run all:e2e development`, then
@@ -198,18 +211,18 @@ Each thing has a check (reads only) and an update (changes the files). Run `aube
 - **Courts** have opaque UUIDs (`src/lib/courts.ts`), never names, so renaming a court can't break a booking.
 - **A daily cron** deletes bookings older than a month.
 - **Tests:** unit tests in `src/**/*.test.ts`, Workers runtime tests in `test/`, browser tests in `e2e/`, live tests in
-  `e2e/live/`. `aube run ci` runs exactly what GitHub's CI runs.
+  `e2e/live/`. `mise run mise-check:verify` runs exactly what GitHub's CI runs.
 
 ## The stack
 
 TanStack Start · React 19 · Tailwind CSS 4 · shadcn/ui · Better Auth · Drizzle ORM · Cloudflare Workers, Durable
-Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tools: mise, aube, Pitchfork, Tailscale, Hallmark.
+Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tools: mise, aube, mise-check, Pitchfork, Tailscale, Hallmark.
 
 It's the stack of [Gateweave's products](https://github.com/orgs/gateweavehq/repositories), taken from
 [gateweavehq/track](https://github.com/gateweavehq/track): the same libraries, at the same versions, wired the same
 way, in one package instead of four. Track's realtime sync, MCP, GitHub app, email and organisations are left out,
 because a booking site doesn't need them. Different on purpose: aube instead of pnpm, mise for node and tools, and one
-`aube run ci` instead of several CI jobs.
+`mise run mise-check:verify` instead of several CI jobs.
 
 ## Not real yet
 
@@ -225,7 +238,8 @@ because a booking site doesn't need them. Different on purpose: aube instead of 
 - **Track:** commit `b8b5ba0` (2026-11-06), checked 2026-11-07.
 - **Gateweave ID:** release `v0.12.0`, commit `5c4b942`, checked 2026-11-08, in `scripts/id-release.mjs`. Every task
   that uses ID checks the commit.
-- **node** `24.22.2` and **aube** `2.9.0`: the newest on 2026-11-07.
+- **node** `24.22.2` and **aube** `2.9.0`: the newest on 2026-11-07. **mise** `2026.11.3` (`min_version`), **Pitchfork**
+  `2.33.1`, **mise-check** `0.4.9`: checked 2026-11-08.
 - **`puppeteer-core` is held at 25.12.0.** Hallmark's lint drives Chrome with it. Every later release needs
   `chromium-bidi` 157 or newer, which Google publishes without npm provenance, and aube refuses packages without it.
   Checked 2026-11-07.

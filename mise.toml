@@ -13,7 +13,15 @@
 #   production   https://courts.ubuntusoftware.net           this app       Worker courts-production, D1 courts-production
 #                https://id.ubuntusoftware.net               Gateweave ID   Worker id-production, D1 id-production
 
+# The mise this repo was last checked with (2026-11-08). An older mise stops here with a message, instead of failing
+# later on something it lacks (daemons, deps, task logs).
+min_version = "2026.11.3"
+
 [settings]
+# mise.lock holds every tool's exact download and checksum, for Linux (cloud sessions, CI) and Apple-silicon Macs.
+# mise install checks against it; mise-check:update-mise and mise lock refresh it. (aube and Pitchfork make no Intel Mac builds.)
+lockfile = true
+lockfile_platforms = ["linux-x64", "macos-arm64"]
 # mise's daemons ([daemons] below, run by Pitchfork) are experimental in mise; all:dev uses them.
 experimental = true
 # npm: tools (the skills CLI) are installed by the aube built into mise. The aube in [tools] is the command you run.
@@ -33,16 +41,24 @@ task.history_limit = 100
 jobs = 1
 
 [tools]
-# The tools that run the repo (tools:check, tools:update). The app's packages and node are package.json's
-# (deps:check, deps:update). README, Keeping versions current.
+# The tools that run the repo (tools:check; moved by mise run mise-check:update-mise). The app's packages and node are
+# package.json's (deps:check; mise-check:update-packages, node:update). README, Keeping versions current.
 # Installs the Node packages from package.json and aube-lock.yaml. No npm, no pnpm.
-aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }
+aube = { version = "2.9.0", workflow = [
+  "release-plz.yml@refs/heads/main",
+  "release.yml@refs/heads/main",
+] }
 # The skills CLI (vercel-labs/skills), as Hallmark's README installs it: mise run hallmark:update.
 "npm:skills" = "1.7.6"
 # Pitchfork runs the two dev servers in the background for mise run all:dev ([daemons] below).
 pitchfork = { version = "2.33.1", workflow = "release.yml@refs/heads/main" }
 # Tailscale: mise run all:dev puts the local pair on public https addresses (Funnel), signed in from a browser link.
 tailscale = "1.104.5"
+
+[deps.aube]
+# The app's packages (package.json, aube-lock.yaml) are installed by mise itself, before any mise run or mise exec,
+# whenever they changed or node_modules is missing. Nobody runs aube install by hand.
+auto = true
 
 [env]
 # The packages' own binaries (wrangler, vite, biome, playwright) by name.
@@ -51,31 +67,57 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 # with none set, as on a Mac, it changes nothing.
 NODE_USE_ENV_PROXY = "1"
 
-# Keeping versions current (README): deps: is package.json, tools: this file, id: Gateweave ID's pin in
-# scripts/id-release.mjs. check reads, update changes.
-# Not in CI: their answers change whenever something is published.
+# mise-check's names (docs/mise-check/README.md): setup gets a machine ready, test runs every check and test. GitHub
+# runs both through mise run mise-check:verify (.github/workflows/mise-check.yml), the same as any machine.
+[tasks.setup]
+description = "Installs the app's packages (mise runs this itself before any task when they changed)"
+run = "mise deps"
+
+[tasks.test]
+description = "Runs every check and test, in order. GitHub runs this too, through mise run mise-check:verify"
+run = [
+  "mise fmt --check",
+  "mise run docs:check",
+  "aube run check",
+  "aube run config:check",
+  "aube run typecheck",
+  "aube run test",
+  "aube run dev:setup",
+  "aube run build",
+  "aube run test:e2e",
+]
+
+[tasks."docs:update"]
+description = "Rewrites docs/commands.md: the mise tasks (written by mise) and the app's scripts"
+run = [
+  "mise generate task-docs --inject --output docs/commands.md",
+  "node scripts/commands.mjs",
+]
+
+[tasks."docs:check"]
+description = "Fails if docs/commands.md is out of date. Fix it with mise run docs:update"
+run = ["mise run docs:update", "git diff --exit-code -- docs/commands.md"]
+
+# Keeping versions current (README). Moving pins is mise-check's: mise run mise-check:update (the mise tools, then the
+# app's packages). These read only, except node:update. Not in CI: their answers change whenever something is published.
 [tasks."deps:check"]
 description = "Lists app packages that are out of date or have security warnings"
 run = ["aube audit", "aube outdated"]
 
-[tasks."deps:update"]
-description = "Updates the app's packages and node to the newest versions. Run aube run ci afterwards"
-run = ["aube runtime set node 24 --save-exact", "aube update --latest --exact"]
-
 [tasks."tools:check"]
 description = "Lists tools in mise.toml that are out of date"
-run = "mise outdated --bump aube npm:skills pitchfork tailscale"
+run = "mise outdated --bump"
 
-[tasks."tools:update"]
-description = "Updates the tools in mise.toml to the newest versions. Run aube run ci afterwards"
-run = "mise use --pin aube@latest npm:skills@latest pitchfork@latest tailscale@latest"
+[tasks."node:update"]
+description = "Moves node to its newest 24.x, in package.json (devEngines.runtime). Then mise run mise-check:verify"
+run = "aube runtime set node 24 --save-exact"
 
 [tasks."id:check"]
 description = "Lists Gateweave ID releases newer than the one we use, with links to their notes, and says if they change the database"
 run = "node scripts/id-version.mjs check"
 
 [tasks."id:update"]
-description = "Moves us to the newest Gateweave ID release. Run aube run ci afterwards; deploy it with id:deploy"
+description = "Moves us to the newest Gateweave ID release. Then mise run mise-check:verify; deploy it with id:deploy"
 run = "node scripts/id-version.mjs update"
 
 # Hallmark (README, Hallmark locked to this stack). Each task that designs opens the `claude` already on this machine
@@ -114,7 +156,10 @@ run = ["aube run build", "aube run hallmark"]
 [tasks."hallmark:update"]
 description = "Updates Hallmark to its newest version, then lints every page"
 env = { DISABLE_TELEMETRY = "1" }
-run = ["skills add nutlope/hallmark --skill hallmark --agent claude-code --copy --yes", "mise run hallmark:lint"]
+run = [
+  "skills add nutlope/hallmark --skill hallmark --agent claude-code --copy --yes",
+  "mise run hallmark:lint",
+]
 
 [tasks."cloudflare:login"]
 description = "Logs this repo in to Cloudflare. Prints a link to approve, then waits"
@@ -185,6 +230,24 @@ usage = 'arg "<env>" help="staging or production" { choices "staging" "productio
 description = "Removes the site, then Gateweave ID"
 depends = ["app:undeploy {{usage.env}}"]
 run = "mise run id:undeploy {{usage.env}}"
+
+# What a machine needs that mise doesn't install: mise doctor project checks each, and says how to get what's missing.
+[doctor.checks.chrome-linux]
+description = "Google Chrome, for the end-to-end tests and Hallmark's lint"
+run = "command -v google-chrome"
+os = ["linux"]
+hint = "Install Google Chrome: https://www.google.com/chrome/"
+
+[doctor.checks.chrome-macos]
+description = "Google Chrome, for the end-to-end tests and Hallmark's lint"
+run = "test -d '/Applications/Google Chrome.app'"
+os = ["macos"]
+hint = "Install Google Chrome: https://www.google.com/chrome/"
+
+[doctor.checks.claude]
+description = "Claude Code, for mise run hallmark:page, hallmark:redesign and hallmark:audit"
+run = "command -v claude"
+hint = "Install Claude Code: https://docs.claude.com/en/docs/claude-code/setup"
 
 # The two dev servers that mise run all:dev starts, run by Pitchfork (pinned above) in the background. mise waits until
 # each answers, and they keep running after all:dev ends. mise daemons logs id (or courts) shows their output, mise
