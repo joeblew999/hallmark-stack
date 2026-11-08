@@ -6,14 +6,15 @@ path; otherwise prefix `mise exec --`.
 
 ## mise: the control plane
 
-What sits outside this app: Cloudflare and Gateweave ID. From the root `mise.toml`.
+What sits outside this app: Cloudflare and Gateweave ID, and keeping versions current (README, Keeping versions
+current). From the root `mise.toml`.
 
 | Command | What it's for |
 | --- | --- |
-| `mise run deps:outdated` | Which packages in package.json are behind npm's latest (aube outdated): reads only, changes nothing; exits 1 when any is behind, so mise says the task failed. aube holds back releases younger than its minimumReleaseAge and says which |
-| `mise run deps:audit` | Every package in aube-lock.yaml, direct and underneath, against npm's security advisories (aube audit): reads only, changes nothing; exits 1 when any is found. `aube why <package>` shows what pulls one in |
-| `mise run deps:update` | Every package in package.json to npm's latest, as exact pins, and aube-lock.yaml to match (aube update --latest --exact); skips packages held in aube-workspace.yaml. Run aube run ci after. Stops if a new version lost its build proof (aube trust check) |
-| `mise run tools:update` | node to the newest 24 in package.json (aube runtime set), and aube and Better Auth's CLI (npm:auth) to their newest in this file (mise use --pin), as exact pins. Run aube run ci after. mise outdated --bump shows what's newer, a Node major included |
+| `mise run deps:check` | Are the app's packages behind or unsafe? Lists anything new; held packages and accepted advisories are in aube-workspace.yaml |
+| `mise run deps:update` | Move the app's packages and node to their newest, as exact pins. Then run aube run ci |
+| `mise run tools:check` | Are the tools in mise.toml behind? |
+| `mise run tools:update` | Move the tools in mise.toml to their newest, as exact pins. Then run aube run ci |
 | `mise run cloudflare:login` | Cloudflare login for this repo (Wrangler's device-code flow): prints the approval link with the code on it, waits, then says who is logged in; already logged in, it just says who |
 | `mise run cloudflare:logout` | End this repo's Cloudflare login (wrangler logout: the token is revoked and deleted here); not logged in, it says so |
 | `mise run id:deploy <env>` | One environment's Gateweave ID (pinned v0.11.4) onto Cloudflare as id-<env>, at its address in id.jsonc, by ID's own deploy script, set up for the internet: email from its own name (Email Sending), its D1 made in Asia-Pacific, its Turnstile, the breached-password check; OIDC_PAIRWISE_SECRET and TURNSTILE_SECRET_KEY set once, kept by Cloudflare, never printed; waits until its provider answers, then id:claim, then opens sign-up (scripts/id-deploy.mjs) |

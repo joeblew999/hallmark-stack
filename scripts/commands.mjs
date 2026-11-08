@@ -36,7 +36,8 @@ path; otherwise prefix \`mise exec --\`.
 
 ## mise: the control plane
 
-What sits outside this app: Cloudflare and Gateweave ID. From the root \`mise.toml\`.
+What sits outside this app: Cloudflare and Gateweave ID, and keeping versions current (README, Keeping versions
+current). From the root \`mise.toml\`.
 
 | Command | What it's for |
 | --- | --- |

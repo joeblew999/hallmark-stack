@@ -19,7 +19,7 @@ The stack is [Gateweave](https://gateweave.com)'s: every Gateweave product
 [ID](https://github.com/gateweavehq/id) among them. Check there when the stack moves.
 
 TanStack Start · React 19 · Tailwind CSS 4 · shadcn/ui · Better Auth · Drizzle ORM · Cloudflare Workers, Durable
-Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tooling: mise (aube; node from package.json), aube, Hallmark.
+Objects and D1 · Vite 8 · TypeScript 7 · Vitest · Playwright · Biome · zod. Tooling: mise (aube), aube, Hallmark.
 
 ## Track: the stack this is built on
 
@@ -199,7 +199,7 @@ carries on.
 for the end-to-end tests and Hallmark's lint. Then:
 
 ```sh
-mise install            # node (package.json devEngines.runtime), aube and Better Auth's CLI (mise.toml)
+mise install            # node (package.json devEngines.runtime) and aube (mise.toml)
 aube install            # the packages, from aube-lock.yaml
 aube run dev:setup      # .dev.vars with a random secret; the local D1 migrated
 aube run dev            # http://localhost:4710
@@ -218,6 +218,22 @@ GitHub's CI runs, and the same here.
   logouts; Track's `delete-account.ts` is there if courts needs its own.
 - **The two photographs** are stand-ins from Hallmark's library, credited in the footer. Replace
   `public/images/clay-court.jpg` and `public/images/goal.jpg` with your own.
+
+## Keeping versions current
+
+Two things to keep current, each with a check and an update, and neither update touches the other's files:
+
+| Tasks    | Its files                        | What's on it                                                                                                                                                                                                | Check                  | Update                  |
+| -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----------------------- |
+| `deps:`  | `package.json`, `aube-lock.yaml` | Everything the app needs to build, test and run: its packages, node (`devEngines.runtime`, which aube locks with checksums and mise installs) and Better Auth's CLI (it must match the app's `better-auth`) | `mise run deps:check`  | `mise run deps:update`  |
+| `tools:` | `mise.toml`                      | The tools that run the repo: aube                                                                                                                                                                           | `mise run tools:check` | `mise run tools:update` |
+
+- **Checks** read only. `deps:check` fails only on what's new: packages held on purpose (`updateConfig`) and advisories known and
+  accepted (`auditConfig`, each with its reason) are listed in `aube-workspace.yaml`.
+- **Updates** pin exact versions; run `aube run ci` after, then commit. Not in CI: their answers change whenever
+  something is published.
+- **The deploy tasks use wrangler from `package.json`** (`cloudflare:`, `id:` and `app:`), the one the app was built
+  and tested with.
 
 ## Provenance and pins
 

@@ -9,3 +9,11 @@ allowBuilds:
 updateConfig:
   ignoreDependencies:
     - puppeteer-core
+# Advisories known and accepted, so mise run deps:check fails only on a new one. Each is in a dev tool, not the Worker.
+auditConfig:
+  ignoreGhsas:
+    # zod 3.25.76 (memory exhaustion), only through the held puppeteer-core 25.12.0 -> chromium-bidi 17.0.2.
+    - GHSA-mrhx-c7xc-m3w5
+    # esbuild 0.18.20 (any site can read the dev server), only through drizzle-kit's @esbuild-kit loader;
+    # drizzle-kit runs `generate`, never a dev server, and its latest still carries it.
+    - GHSA-67mh-4wv8-2f99
