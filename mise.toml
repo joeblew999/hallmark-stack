@@ -20,6 +20,8 @@ npm.package_manager = "aube"
 skills.fetch = false
 # node's version is package.json's devEngines.runtime, the one pin, which aube and mise both read.
 idiomatic_version_file_enable_tools = ["node"]
+# Every mise run says how long each task took, on every OS.
+task_timings = true
 # One task at a time, in the order `depends` lists them: the deploys log in, and id:deploy waits for a person.
 jobs = 1
 
