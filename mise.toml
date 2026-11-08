@@ -45,11 +45,11 @@ description = "Every package in aube-lock.yaml, direct and underneath, against n
 run = "aube audit"
 
 [tasks."deps:update"]
-description = "Every package in package.json to npm's latest, kept as exact pins, and aube-lock.yaml rewritten to match (aube update --latest --exact); then aube run ci proves it. All or nothing: aube's trust policy stops it when a new version has lost the build proof its earlier ones had (`aube trust check <package>@<version>` shows it). Packages held on purpose (puppeteer-core: README, Provenance and pins) are listed in aube-workspace.yaml and not moved. The auth:schema script's auth@ pin moves by hand"
+description = "Every package in package.json to npm's latest, as exact pins, and aube-lock.yaml to match (aube update --latest --exact); skips packages held in aube-workspace.yaml. Run aube run ci after. Stops if a new version lost its build proof (aube trust check). auth:schema's auth@ pin moves by hand"
 run = "aube update --latest --exact"
 
 [tasks."tools:update"]
-description = "node within 24 (Track pins Node 24) in package.json's devEngines.runtime (aube runtime set), and aube to its latest in this file (mise use --pin), as exact pins; then aube run ci proves it. `mise outdated --bump` shows what is newer"
+description = "node to the newest 24 in package.json (aube runtime set) and aube to its newest in this file (mise use --pin), as exact pins. Run aube run ci after. mise outdated --bump shows what's newer, a Node major included"
 run = ["aube runtime set node 24 --save-exact", "mise use --pin aube@latest"]
 
 [tasks."cloudflare:login"]
